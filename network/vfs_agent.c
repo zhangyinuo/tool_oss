@@ -456,11 +456,20 @@ static int agent_log_init()
 
 static void do_run(struct threadstat *thst)
 {
-	int timespan = myconfig_get_intval("voss_timesplice", 60);
-	int heartbeat = myconfig_get_intval("voss_heartbeat", 30);
+	struct conn *curcon = NULL;
+	curcon = &(defconn);
+	mybuff_reinit(&(curcon->send_buff));
+	mybuff_reinit(&(curcon->recv_buff));
 	char* tmpdir = myconfig_get_value("voss_tmpdir");
 	if (tmpdir == NULL)
 		tmpdir = "../path/tmpdir";
+	int outdata = 0;
+	do_scan(curcon, &outdata, 0);
+	if (outdata)
+		dump_to_file(curcon, tmpdir);
+	return ;
+	int timespan = myconfig_get_intval("voss_timesplice", 60);
+	int heartbeat = myconfig_get_intval("voss_heartbeat", 30);
 
 	int i = 0;
 	int fd = -1;
@@ -505,8 +514,6 @@ static void do_run(struct threadstat *thst)
 	else
 		LOG(vfs_agent_log, LOG_DEBUG, "create socket ok fd [%d]\n", fd);
 
-	int outdata = 0;
-	struct conn *curcon = NULL;
 	if (fd >= 0)
 	{
 		fcntl(fd, F_SETFL, O_RDWR|O_NONBLOCK);
