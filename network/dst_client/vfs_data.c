@@ -146,22 +146,18 @@ static int check_req(int fd)
 		return RECV_CLOSE;
 	}
 
-	//char *pleng = strstr(data, "Content-Length: ");
-	char *pleng = strstr(data, "datalen: ");
+	char *pleng = strstr(data, "Content-Length: ");
 	if (pleng == NULL)
 	{
-		//LOG(vfs_sig_log, LOG_ERROR, "%s:%d fd[%d] ERROR Content-Length: !\n", FUNC, LN, fd);
-		LOG(vfs_sig_log, LOG_ERROR, "%s:%d fd[%d] ERROR datalen: !\n", FUNC, LN, fd);
+		LOG(vfs_sig_log, LOG_ERROR, "%s:%d fd[%d] ERROR Content-Length: !\n", FUNC, LN, fd);
 		return RECV_CLOSE;
 	}
 
-	//off_t fsize = atol(pleng + strlen("Content-Length: "));
-	off_t fsize = atol(pleng + strlen("datalen: "));
+	off_t fsize = atol(pleng + strlen("Content-Length: "));
 
 	int clen = end - data;
 	int ret = do_req(fd, fsize);
-	//LOG(vfs_sig_log, LOG_DEBUG, "%s:%d fd[%d] Content-Length: %ld!\n", FUNC, LN, fd, fsize);
-	LOG(vfs_sig_log, LOG_DEBUG, "%s:%d fd[%d] datalen: %ld!\n", FUNC, LN, fd, fsize);
+	LOG(vfs_sig_log, LOG_DEBUG, "%s:%d fd[%d] Content-Length: %ld!\n", FUNC, LN, fd, fsize);
 	consume_client_data(fd, clen);
 	return ret;
 }
