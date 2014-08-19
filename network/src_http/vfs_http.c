@@ -44,54 +44,36 @@ typedef struct {
 
 int vfs_http_log = -1;
 static list_head_t activelist;  //ÓÃÀ´¼ì²â³¬Ê±
-static int insert_sub_task(t_uc_oss_http_header *header, int idx, int count, off_t start, off_t end)
+
+static int do_req(int cfd, t_uc_oss_http_header *header)
 {
-	t_vfs_tasklist *task = NULL;
-	int ret = vfs_get_task(&task, TASK_HOME);
-	if (ret != GET_TASK_OK)
+	char httpheader[256] = {0};
+	int fd;
+	struct stat st;
+	
+	fd = open(header->filename, O_RDONLY);
+	if(fd > 0) 
 	{
-		LOG(vfs_http_log, LOG_ERROR, "vfs_get_task err %m %s:%s\n", header->srcip, header->filename);
-		return -1;
+		fstat(fd, &st);
+		off_t len = 0;
+		if (header->start > st.st_size - 1 || header->start > header->end)
+		{
+			sprintf(httpheader, "HTTP/1.1 416 RANGEERROR\r\nContent-Type: video/x-flv\r\nContent-Length: 0\r\n\r\n");
+			set_client_data(cfd, httpheader, strlen(httpheader));
+		}
+
+		if (header->end > st.st_size - 1)
+			header->end = st.st_size - 1;
+		len =  header->end - header->start + 1;
+		sprintf(httpheader, "HTTP/1.1 200 OK\r\nContent-Type: video/x-flv\r\nContent-Length: %ld\r\n\r\n", len);
+		set_client_data(cfd, httpheader, strlen(httpheader));
+		set_client_fd(cfd, fd, header->start, len);
 	}
-
-	t_task_base *base = (t_task_base *) &(task->task.base);
-	t_task_sub *sub = (t_task_sub *) &(task->task.sub);
-
-	sub->idx = idx;
-	sub->count = count;
-
-	sub->start = start;
-	sub->end = end;
-
-	base->fsize = header->datalen;
-	snprintf(base->filename, sizeof(base->filename), "%s", header->filename);
-	snprintf(base->filemd5, sizeof(base->filemd5), "%s", header->filemd5);
-	vfs_set_task(task, TASK_WAIT);
-	return 0;
-}
-
-static int do_req(t_uc_oss_http_header *header)
-{
-	if ( header->datalen == 0)
-		return 0;
-
-	int splic_count = header->datalen / g_config.splic_min_size;
-	if (header->datalen % g_config.splic_min_size)
-		splic_count++;
-
-	int idx = 0;
-	off_t start = 0;
-	off_t end = 0;
-	for(; idx <= splic_count; idx++)
+	else
 	{
-		if (idx == splic_count)
-			end = header->datalen - 1;
-		else
-			end = start + g_config.splic_min_size;
-
-		if (insert_sub_task(header, idx, splic_count, start, end))
-			return -1;
-		start += g_config.splic_min_size;
+		LOG(vfs_http_log, LOG_ERROR, "open %s err %m\n", header->filename);
+		sprintf(httpheader, "HTTP/1.1 404 NOTFOUND\r\nContent-Type: video/x-flv\r\nContent-Length: 0\r\n\r\n");
+		set_client_data(cfd, httpheader, strlen(httpheader));
 	}
 	return 0;
 }
@@ -222,7 +204,7 @@ static int check_request(int fd, char* data, int len)
 				if(len < 1023) {
 					if (parse_header(&(peer->header), data, p - data))
 						return -1;
-					do_req(&(peer->header));
+					do_req(fd, &(peer->header));
 					return p - data + 4;
 				}
 			}
@@ -233,14 +215,6 @@ static int check_request(int fd, char* data, int len)
 	}
 	else
 		return -1;
-}
-
-static int handle_request(int cfd) 
-{
-	char httpheader[256] = {0};
-	int len = sprintf(httpheader, "HTTP/1.1 200 OK\r\n\r\n");
-	set_client_data(cfd, httpheader, len);
-	return 0;
 }
 
 static int check_req(int fd)
@@ -263,7 +237,6 @@ static int check_req(int fd)
 		LOG(vfs_http_log, LOG_DEBUG, "fd[%d] data not suffic!\n", fd);
 		return RECV_ADD_EPOLLIN;
 	}
-	handle_request(fd);
 	consume_client_data(fd, clen);
 	return RECV_SEND;
 }

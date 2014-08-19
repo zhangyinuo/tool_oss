@@ -1,4 +1,4 @@
-SUBDIRS = lib 3rdlib network network/dst_http network/dst_client network/voss
+SUBDIRS = lib 3rdlib network network/dst_http network/dst_client network/voss network/src_http network/src_client
 installdir = /home/nemo
 #curday = $(shell date '+%Y%m%d')
 all:
@@ -29,4 +29,6 @@ install:
 	cd network; cp vfs_master $(installdir)/bin; cp vfs_master $(installdir)/bin/vfs_master_voss; cp vfs_master*.conf $(installdir)/conf;
 	cd network/dst_http; cp *.so $(installdir)/bin
 	cd network/dst_client; cp *.so $(installdir)/bin
+	cd network/src_http; cp *.so $(installdir)/bin
+	cd network/src_client; cp *.so $(installdir)/bin
 	cd network/voss; cp *.so $(installdir)/bin

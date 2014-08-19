@@ -40,53 +40,6 @@ const char *sock_stat_cmd[] = {"LOGOUT", "CONNECTED", "LOGIN", "IDLE", "PREPARE_
 
 static int init_proxy_info()
 {
-	memset(&g_proxy, 0, sizeof(g_proxy));
-	if (self_ipinfo.role != ROLE_CS)
-		return 0;
-	char *v = myconfig_get_value("proxy_isp");
-	if (v == NULL)
-	{
-		LOG(vfs_sig_log, LOG_NORMAL, "no proxy_isp!\n");
-		return 0;
-	}
-	if (strcasestr(v, ispname[self_ipinfo.isp]) == NULL)
-	{
-		LOG(vfs_sig_log, LOG_NORMAL, "self %s not in proxy_isp %s!\n", ispname[self_ipinfo.isp], v);
-		return 0;
-	}
-	char key[128] = {0x0};
-	snprintf(key, sizeof(key), "proxy_%s_host", ispname[self_ipinfo.isp]);
-	v = myconfig_get_value(key);
-	if (!v)
-	{
-		LOG(vfs_sig_log, LOG_ERROR, "no %s!\n", key);
-		return -1;
-	}
-	snprintf(g_proxy.host, sizeof(g_proxy.host), "%s", v);
-
-	memset(key, 0, sizeof(key));
-	snprintf(key, sizeof(key), "proxy_%s_port", ispname[self_ipinfo.isp]);
-	g_proxy.port = myconfig_get_intval(key, 0);
-	if (g_proxy.port == 0) 
-	{
-		LOG(vfs_sig_log, LOG_ERROR, "no %s!\n", key);
-		return -1;
-	}
-	g_proxyed = 1;
-
-	memset(key, 0, sizeof(key));
-	snprintf(key, sizeof(key), "proxy_%s_username", ispname[self_ipinfo.isp]);
-	v = myconfig_get_value(key);
-	if (!v)
-		return 0;
-	snprintf(g_proxy.username, sizeof(g_proxy.username), "%s", v);
-
-	memset(key, 0, sizeof(key));
-	snprintf(key, sizeof(key), "proxy_%s_password", ispname[self_ipinfo.isp]);
-	v = myconfig_get_value(key);
-	if (!v)
-		return 0;
-	snprintf(g_proxy.password, sizeof(g_proxy.password), "%s", v);
 	return 0;
 }
 
