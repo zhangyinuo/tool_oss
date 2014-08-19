@@ -84,26 +84,10 @@ static int parse_args(int argc, char* argv[]) {
 }
 /* main thread loop */
 static void main_loop(struct threadstat *thst) {
-	time_t last = time(NULL);
 	while(!stop) {
 		sleep(2);
 		scan_delay_task();
 		thread_reached(thst);
-		time_t now = time(NULL);
-		if (now - last > g_config.reload_time)
-		{
-			int ret = reload_cfg();
-			if (ret == -1)
-			{
-				LOG(glogfd, LOG_ERROR, "reload_cfg error %m\n");
-				stop = 1;
-			}
-			if (ret == 0)
-			{
-				last = now;
-				check_self_stat();
-			}
-		}
 	}
 }
 
@@ -129,35 +113,40 @@ int main(int argc, char **argv) {
 	ICALL(init_global);
 	ICALL(vfs_init);
 	ICALL(init_task_info);
-
-	if (g_config.voss_flag == 0)
+	if (get_self_info(&self_ipinfo))
 	{
-		t_thread_arg arg;
-		memset(&arg, 0, sizeof(arg));
-		snprintf(arg.name, sizeof(arg.name), "./ott_server.so");
-		LOG(glogfd, LOG_NORMAL, "prepare start %s\n", arg.name);
-		arg.port = 80;
-		arg.maxevent = myconfig_get_intval("vfs_sig_maxevent", 4096);
-		if (init_vfs_thread(&arg))
-			goto error;
+		LOG(glogfd, LOG_ERROR, "get_self_role ERR!\n");
+		goto error;
+	}
+	if (self_ipinfo.role <= UNKOWN || self_ipinfo.role >= SELF_IP)
+	{
+		LOG(glogfd, LOG_ERROR, "get_self_role ERR!\n");
+		fprintf(stderr, "get_self_role ERR!\n");
+		goto error;
+	}
+	if (self_ipinfo.role != ROLE_VOSS_MASTER)
+		ICALL(init_vfs_agent);
+	char *srole = iprole[self_ipinfo.role];
+	LOG(glogfd, LOG_NORMAL, "MY ROLE is %s\n", srole);
+
+	t_thread_arg arg;
+	memset(&arg, 0, sizeof(arg));
+	snprintf(arg.name, sizeof(arg.name), "./vfs_%s_sig.so", srole);
+	LOG(glogfd, LOG_NORMAL, "prepare start %s\n", arg.name);
+	arg.port = g_config.sig_port;
+	arg.maxevent = myconfig_get_intval("vfs_sig_maxevent", 4096);
+	if (init_vfs_thread(&arg))
+		goto error;
+	if (self_ipinfo.role > UNKOWN && self_ipinfo.role < ROLE_TRACKER)
+	{
 		t_thread_arg arg1;
 		memset(&arg1, 0, sizeof(arg1));
-		snprintf(arg1.name, sizeof(arg1.name), "./ott_client.so");
+		snprintf(arg1.name, sizeof(arg1.name), "./vfs_data.so");
 		LOG(glogfd, LOG_NORMAL, "prepare start %s\n", arg1.name);
+		arg1.port = g_config.data_port;
+		arg1.flag = 1;
 		arg1.maxevent = myconfig_get_intval("vfs_data_maxevent", 4096);
 		if (init_vfs_thread(&arg1))
-			goto error;
-		ICALL(init_vfs_agent);
-	}
-	else
-	{
-		t_thread_arg arg;
-		memset(&arg, 0, sizeof(arg));
-		snprintf(arg.name, sizeof(arg.name), "./ott_voss.so");
-		LOG(glogfd, LOG_NORMAL, "prepare start %s\n", arg.name);
-		arg.port = g_config.sig_port;
-		arg.maxevent = myconfig_get_intval("vfs_sig_maxevent", 4096);
-		if (init_vfs_thread(&arg))
 			goto error;
 	}
 	thread_jumbo_title();
@@ -180,7 +169,7 @@ out:
 error:
 	if(err == -ENOMEM) 
 		printf("\n\033[31m\033[1mNO ENOUGH MEMORY\033[0m\n");
-
+	
 	printf("\033[31m\033[1mStart Fail.\033[0m\n");
 	return -1;
 }

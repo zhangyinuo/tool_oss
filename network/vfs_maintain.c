@@ -342,13 +342,9 @@ int voss_off_on_line(StringPairList *pairlist, char *buf, int len, int type)
 				break;
 			*t = 0x0;
 			ip = get_uint32_ip(v, sip);
-			do_ip_off_line(ip, type);
-			oper_ip_off_line(ip, type);
 			v = t + 1;
 		}
 		ip = get_uint32_ip(v, sip);
-		do_ip_off_line(ip, type);
-		oper_ip_off_line(ip, type);
 	}
 	return ol;
 }

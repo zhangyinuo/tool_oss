@@ -77,7 +77,7 @@ void report_err_2_nm (char *file, const char *func, int line, int ret)
 {
 	char val[256] = {0x0};
 	snprintf(val, sizeof(val), "%s:%s:%d  ret=%d err %m", file, func, line, ret);
-	SetStr(VFS_TASK_MUTEX_ERR, val);
+	LOG(glogfd, LOG_ERROR, "%s", val);
 }
 
 int check_self_ip(uint32_t ip)
@@ -124,12 +124,13 @@ void reload_config()
 int init_global()
 {
 	self_stat = UNKOWN_STAT;
-	g_config.voss_flag = myconfig_get_intval("voss_flag", 0);
 	g_config.sig_port = myconfig_get_intval("sig_port", 39090);
 	g_config.data_port = myconfig_get_intval("data_port", 49090);
 	g_config.timeout = myconfig_get_intval("timeout", 300);
 	g_config.cktimeout = myconfig_get_intval("cktimeout", 5);
 	g_config.lock_timeout = myconfig_get_intval("lock_timeout", 10);
+	g_config.task_splic_count = myconfig_get_intval("task_splic_count", 100);
+	g_config.splic_min_size = myconfig_get_intval("splic_min_size", 10240000);
 	init_buff_size = myconfig_get_intval("socket_buff", 65536);
 	if (init_buff_size < 20480)
 		init_buff_size = 20480;
@@ -155,17 +156,8 @@ int init_global()
 	}
 	g_config.dir_uid = atoi(buf);
 	g_config.dir_gid = atoi(t+1);
-	char *docroot = myconfig_get_value("docroot");
-	if (docroot == NULL)
-		snprintf(g_config.docroot, sizeof(g_config.docroot), "/ott/docroot");
-	snprintf(g_config.docroot, sizeof(g_config.docroot), "%s", docroot);
 
 	reload_config();
-	char *vfs_path = myconfig_get_value("vfs_path");
-	if (vfs_path == NULL)
-		snprintf(g_config.path, sizeof(g_config.path), "/ott/data/");
-	else
-		snprintf(g_config.path, sizeof(g_config.path), "%s", vfs_path);
 	char *v_domain = myconfig_get_value("domain_prefix");
 	if (v_domain == NULL)
 		snprintf(g_config.domain_prefix, sizeof(g_config.domain_prefix), "fcs");
@@ -197,87 +189,48 @@ int init_global()
 			g_config.mindiskfree = i * unit_size;
 	}
 
+	char *v = myconfig_get_value("vfs_path");
+	if (v == NULL)
+		v = "/home/vfs/path";
+
+	v = myconfig_get_value("vfs_sync_starttime");
+	if (v == NULL)
+		v = "01:00:00";
+	snprintf(g_config.sync_stime, sizeof(g_config.sync_stime), "%s", v);
+	v = myconfig_get_value("vfs_sync_endtime");
+	if (v == NULL)
+		v = "09:00:00";
+	snprintf(g_config.sync_etime, sizeof(g_config.sync_etime), "%s", v);
 	return 0;
 }
 
-void do_ip_off_line(uint32_t ip, int type)
+static int sub_add_cluste_ip(char *name, uint8_t role)
 {
-	if (ip == self_ipinfo.ip)
+	char item[256] = {0x0};
+	snprintf(item, sizeof(item), "iplist_%s", name);
+	char *v = myconfig_get_value(item);
+	if (v == NULL)
 	{
-		if (type == M_OFFLINE)
-		{
-			if (self_stat != OFF_LINE)
-			{
-				self_stat = OFF_LINE;
-				if (self_offline_time == 0)
-					self_offline_time = time(NULL);
-				LOG(glogfd, LOG_NORMAL, "self off_line time %s", ctime(&self_offline_time));
-			}
-		}
-		else
-		{
-			if (self_stat == OFF_LINE)
-				self_stat = UNKOWN_STAT;
-		}
+		LOG(glogfd, LOG_ERROR, "ERR %s:%d no %s\n", FUNC, LN, item);
+		return -1;
 	}
-	if (get_cfg_lock())
-		return ;
-	t_ip_info *ipinfo = NULL;
-	if (get_ip_info_by_uint(&ipinfo, ip, 0, " ", " "))
-		LOG(glogfd, LOG_ERROR, "get_ip_info_by_uint %u\n", ip);
-	else
-		ipinfo->offline = type;
-	release_cfg_lock();
+	uint32_t uip = str2ip(v);
+	if (uip == INADDR_NONE)
+	{
+		LOG(glogfd, LOG_ERROR, "ERR %s:%d error %s = %s\n", FUNC, LN, item, v);
+		return -1;
+	}
+	t_ip_info ipinfo;
+	memset(&ipinfo, 0, sizeof(t_ip_info));
+	snprintf(ipinfo.sip, sizeof(ipinfo.sip), "%s", v);
+	ipinfo.ip = uip;
+	ipinfo.role = role;
+	return add_ip_info(&ipinfo);
 }
 
-void oper_ip_off_line(uint32_t ip, int type)
+static int add_cluste_ip()
 {
-	t_offline_list *server = NULL;
-	list_head_t *l;
-	struct timespec to;
-	to.tv_sec = g_config.lock_timeout + time(NULL);
-	to.tv_nsec = 0;
-	int ret = pthread_rwlock_timedwrlock(&offline_rwmutex, &to);
-	if (ret != 0)
-	{
-		if (ret != EDEADLK)
-		{
-			LOG(glogfd, LOG_ERROR, "ERR %s:%d pthread_rwlock_timedwrlock error %d\n", FUNC, LN, ret);
-			report_err_2_nm(ID, FUNC, LN, ret);
-			return ;
-		}
-	}
-	int get = 0;
-	list_for_each_entry_safe_l(server, l, &offlinehome, hlist)
-	{
-		if (server->ip == ip)
-		{
-			get = 1;
-			if (type == M_ONLINE)
-			{
-				list_del_init(&(server->hlist));
-				free(server);
-			}
-			break;
-		}
-	}
-	if (get == 0 && type == M_OFFLINE)
-	{
-		server = malloc(sizeof(t_offline_list));
-		if (server == NULL)
-			LOG(glogfd, LOG_ERROR, "ERR %s:%d malloc error %m\n", FUNC, LN);
-		else
-		{
-			server->ip = ip;
-			INIT_LIST_HEAD(&(server->hlist));
-			list_add_head(&(server->hlist), &offlinehome);
-		}
-	}
-	if (pthread_rwlock_unlock(&offline_rwmutex))
-	{
-		LOG(glogfd, LOG_ERROR, "ERR %s:%d pthread_rwlock_unlock error %m\n", FUNC, LN);
-		report_err_2_nm(ID, FUNC, LN, ret);
-	}
+	return sub_add_cluste_ip("agentip", ROLE_FCS) || sub_add_cluste_ip("serverip", ROLE_CS);
 }
 
 int reload_cfg()
@@ -311,12 +264,19 @@ int reload_cfg()
 			list_add_head(&(server->hlist), &iphome);
 		}
 	}
+
+	if (add_cluste_ip())
+	{
+		LOG(glogfd, LOG_ERROR, "ERR %s:%d add_cluste_ip\n", FUNC, LN);
+		ret = -1;
+	}
+
 	if (pthread_rwlock_unlock(&init_rwmutex))
 	{
 		LOG(glogfd, LOG_ERROR, "ERR %s:%d pthread_rwlock_unlock error %m\n", FUNC, LN);
 		report_err_2_nm(ID, FUNC, LN, ret);
 	}
-	return 0;
+	return ret;
 }
 
 int get_isp_by_name(char *name)
@@ -420,11 +380,6 @@ int add_ip_info(t_ip_info *ipinfo)
 		LOG(glogfd, LOG_ERROR, "exist ip %s\n", ipinfo->sip);
 		return 0;
 	}
-	if (check_self_ip(ipinfo->ip) == 0)
-	{
-		LOG(glogfd, LOG_DEBUG, "self ip %s\n", ipinfo->s_ip);
-		ipinfo->isself = 1;
-	}
 	list_head_t *hashlist = &(cfg_iplist[ipinfo->ip&ALLMASK]);
 	t_ip_info_list *server = NULL;
 	list_head_t *l;
@@ -454,17 +409,6 @@ int add_ip_info(t_ip_info *ipinfo)
 	INIT_LIST_HEAD(&(server->archive_list));
 	memcpy(&(server->ipinfo), ipinfo, sizeof(t_ip_info));
 	list_add_head(&(server->hlist), hashlist);
-	if (ipinfo->role == ROLE_CS)
-	{
-		list_head_t *isplist = &(isp_iplist[ipinfo->isp&MAXISP]);
-		list_add_head(&(server->isplist), isplist);
-		if (ipinfo->archive_isp != ISP_FCS)
-		{
-			isplist = &(isp_iplist[ipinfo->archive_isp&MAXISP]);
-			list_add_head(&(server->archive_list), isplist);
-		}
-	}
-	LOG(glogfd, LOG_NORMAL, "add ip %s %s\n", ipinfo->s_ip, ipinfo->sip);
 	return 0;
 }
 
@@ -481,7 +425,7 @@ int get_ip_info_by_uint(t_ip_info **ipinfo, uint32_t ip, int type, char *s_ip, c
 	list_head_t *l;
 	list_for_each_entry_safe_l(server, l, hashlist, hlist)
 	{
-		if (ip == server->ipinfo.ip || strcmp(server->ipinfo.sip, sip) == 0 || strcmp(server->ipinfo.s_ip, s_ip) == 0)
+		if (ip == server->ipinfo.ip || strcmp(server->ipinfo.sip, sip) == 0 )
 		{
 			if (type == 0)
 				*ipinfo = &(server->ipinfo);
@@ -617,6 +561,11 @@ int get_next_fcs(int fcs, uint8_t isp)
 	return -1;
 }
 
+int get_fcs_isp(int fcs)
+{
+	return fcslist[fcs];
+}
+
 int get_cfg_lock()
 {
 	struct timespec to;
@@ -657,8 +606,6 @@ void check_self_stat()
 	
 		if (ret == 0)
 		{
-			if (ipinfo0->offline)
-				break;
 			if (self_stat == OFF_LINE)
 				self_stat = UNKOWN_STAT;
 			return;

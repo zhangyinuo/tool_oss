@@ -6,7 +6,6 @@
 
 #ifndef _56_VFS_INIT_H_
 #define _56_VFS_INIT_H_
-#include "nm_app_vfs.h"
 #include "list.h"
 #include "vfs_so.h"
 #include "global.h"
@@ -43,18 +42,8 @@ extern const char *path_dirs[];
 
 typedef struct {
 	uint32_t ip;
-	char sip[128]; /*sip or domain */
-	char s_ip[16]; /*sip*/
-	uint8_t isp;  /*if have */
+	char sip[128];
 	uint8_t role;
-	uint8_t archive_isp;
-	uint8_t real_isp;  /*for some arichive machine reuse :) */
-	unsigned char isself:1;
-	unsigned char ishot:1;
-	unsigned char offline:1;
-	unsigned char archive:1;
-	unsigned char reserver:4;
-	char dirs[MAXDIR_FOR_CS][8];  /* if cs , every cs have about 10 dirs */
 } t_ip_info;
 
 typedef struct {
@@ -79,12 +68,13 @@ typedef struct {
 } t_cs_dir_info;
 
 typedef struct {
+	int task_splic_count;
 	off_t splic_min_size;
 	time_t task_timeout;
 	time_t real_rm_time;
 	uint64_t mindiskfree;
-	char docroot[128];
 	char path[256];
+	char docroot[256];
 	char sync_stime[12];
 	char sync_etime[12];
 	char domain_prefix[32];
@@ -108,10 +98,11 @@ typedef struct {
 	uint8_t vfs_test;
 	uint8_t cs_sync_dir;
 	uint8_t data_calcu_md5;
-	int8_t retry;
+	uint8_t retry;
 	uint8_t sync_dir_count;
 	uint8_t continue_flag;
 	uint8_t voss_flag;
+	uint8_t role;
 } t_g_config;
 
 extern t_g_config g_config;
@@ -132,6 +123,8 @@ int init_global();
 
 int check_self_ip(uint32_t ip);
 
+int refresh_self_info(t_ip_info *ipinfo0);
+
 int get_self_info(t_ip_info *ipinfo0);
 
 int init_vfs_thread(t_thread_arg *name);
@@ -145,6 +138,8 @@ int get_cs_info_by_path(char *path, t_cs_dir_info *cs);
 int get_dir1_dir2(char *fcsfile, int *dir1, int *dir2);
 
 int get_next_fcs(int fcs, uint8_t isp);
+
+int get_fcs_isp(int fcs);
 
 void reload_config();
 

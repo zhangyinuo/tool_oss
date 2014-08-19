@@ -1,5 +1,5 @@
-SUBDIRS = lib 3rdlib network network/http network/client network/voss
-installdir = /ott/install
+SUBDIRS = lib 3rdlib network network/dst_http network/dst_client network/voss
+installdir = /home/nemo
 #curday = $(shell date '+%Y%m%d')
 all:
 	@list='$(SUBDIRS)'; for subdir in $$list; do \
@@ -27,6 +27,6 @@ install:
 	mkdir $(installdir)/path/bkdir -p;
 	mkdir $(installdir)/path/delfile -p;
 	cd network; cp vfs_master $(installdir)/bin; cp vfs_master $(installdir)/bin/vfs_master_voss; cp vfs_master*.conf $(installdir)/conf;
-	cd network/http; cp *.so $(installdir)/bin
-	cd network/client; cp *.so $(installdir)/bin
+	cd network/dst_http; cp *.so $(installdir)/bin
+	cd network/dst_client; cp *.so $(installdir)/bin
 	cd network/voss; cp *.so $(installdir)/bin
