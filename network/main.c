@@ -35,7 +35,7 @@ extern t_g_config g_config;
 t_ip_info self_ipinfo;
 time_t vfs_start_time;  /*vfs Æô¶¯Ê±¼ä*/
 int glogfd = -1;
-char *iprole[] = {"unkown", "fcs", "cs", "tracker", "voss_master", "self_ip"}; 
+char *iprole[] = {"unkown", "src", "dst", "tracker", "voss_master", "self_ip"}; 
 
 static int init_glog()
 {
@@ -131,24 +131,20 @@ int main(int argc, char **argv) {
 
 	t_thread_arg arg;
 	memset(&arg, 0, sizeof(arg));
-	snprintf(arg.name, sizeof(arg.name), "./vfs_%s_sig.so", srole);
+	snprintf(arg.name, sizeof(arg.name), "./%s_client.so", srole);
 	LOG(glogfd, LOG_NORMAL, "prepare start %s\n", arg.name);
-	arg.port = g_config.sig_port;
 	arg.maxevent = myconfig_get_intval("vfs_sig_maxevent", 4096);
 	if (init_vfs_thread(&arg))
 		goto error;
-	if (self_ipinfo.role > UNKOWN && self_ipinfo.role < ROLE_TRACKER)
-	{
-		t_thread_arg arg1;
-		memset(&arg1, 0, sizeof(arg1));
-		snprintf(arg1.name, sizeof(arg1.name), "./vfs_data.so");
-		LOG(glogfd, LOG_NORMAL, "prepare start %s\n", arg1.name);
-		arg1.port = g_config.data_port;
-		arg1.flag = 1;
-		arg1.maxevent = myconfig_get_intval("vfs_data_maxevent", 4096);
-		if (init_vfs_thread(&arg1))
-			goto error;
-	}
+	t_thread_arg arg1;
+	memset(&arg1, 0, sizeof(arg1));
+	snprintf(arg1.name, sizeof(arg1.name), "./%s_http.so", srole);
+	LOG(glogfd, LOG_NORMAL, "prepare start %s\n", arg1.name);
+	arg1.port = g_config.sig_port;
+	arg1.flag = 1;
+	arg1.maxevent = myconfig_get_intval("vfs_data_maxevent", 4096);
+	if (init_vfs_thread(&arg1))
+		goto error;
 	thread_jumbo_title();
 	struct threadstat *thst = get_threadstat();
 	if(start_threads() < 0)

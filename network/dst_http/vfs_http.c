@@ -66,6 +66,8 @@ static int insert_sub_task(t_uc_oss_http_header *header, int idx, int count, off
 	base->fsize = header->datalen;
 	snprintf(base->filename, sizeof(base->filename), "%s", header->filename);
 	snprintf(base->filemd5, sizeof(base->filemd5), "%s", header->filemd5);
+	snprintf(base->srcip, sizeof(base->srcip), "%s", header->srcip);
+	LOG(vfs_http_log, LOG_NORMAL, "%s %s:%s:%s %ld:%ld:%d:%d\n", __FUNCTION__, base->srcip, base->filename, base->filemd5, sub->start, sub->end, sub->idx, sub->count);
 	vfs_set_task(task, TASK_WAIT);
 	return 0;
 }
@@ -79,7 +81,7 @@ static int do_req(t_uc_oss_http_header *header)
 	if (header->datalen % g_config.splic_min_size)
 		splic_count++;
 
-	int idx = 0;
+	int idx = 1;
 	off_t start = 0;
 	off_t end = 0;
 	for(; idx <= splic_count; idx++)
