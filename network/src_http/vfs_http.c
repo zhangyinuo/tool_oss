@@ -48,6 +48,13 @@ static list_head_t activelist;  //ÓÃÀ´¼ì²â³¬Ê±
 static int do_req(int cfd, t_uc_oss_http_header *header)
 {
 	char httpheader[256] = {0};
+	if (header->type >= 5)
+	{
+		LOG(vfs_http_log, LOG_NORMAL, "peer rsp %s %d\n", header->filename, header->type);
+		sprintf(httpheader, "HTTP/1.1 200 OK\r\nContent-Type: video/x-flv\r\nContent-Length: 0\r\n\r\n");
+		set_client_data(cfd, httpheader, strlen(httpheader));
+		return 0;
+	}
 	int fd;
 	struct stat st;
 	
@@ -60,6 +67,8 @@ static int do_req(int cfd, t_uc_oss_http_header *header)
 		{
 			sprintf(httpheader, "HTTP/1.1 416 RANGEERROR\r\nContent-Type: video/x-flv\r\nContent-Length: 0\r\n\r\n");
 			set_client_data(cfd, httpheader, strlen(httpheader));
+			close(fd);
+			return 0;
 		}
 
 		if (header->end > st.st_size - 1)

@@ -45,8 +45,6 @@ typedef struct {
 int vfs_http_log = -1;
 static list_head_t activelist;  //”√¿¥ºÏ≤‚≥¨ ±
 
-#include "vfs_http_sub.c"
-
 static int insert_sub_task(t_uc_oss_http_header *header, int idx, int count, off_t start, off_t end)
 {
 	t_vfs_tasklist *task = NULL;
@@ -143,6 +141,8 @@ int svc_initconn(int fd)
 	LOG(vfs_http_log, LOG_DEBUG, "a new fd[%d] init ok!\n", fd);
 	return 0;
 }
+
+#include "vfs_http_sub.c"
 
 static char * parse_item(char *src, char *item, char **end)
 {
