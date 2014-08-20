@@ -48,9 +48,11 @@ static void create_header(char *httpheader, t_task_base *base, t_task_sub *sub)
 	strcat(httpheader, "\r\n");
 
 	strcat(httpheader, "type: 2\r\n");
-	strcat(httpheader, "datalen: 2\r\n");
-
 	char sbuf[64] = {0x0};
+	snprintf(sbuf, sizeof(sbuf), "datalen: %ld\r\n", sub->end - sub->start + 1);
+	strcat(httpheader, sbuf);
+
+	memset(sbuf, 0, sizeof(sbuf));
 	snprintf(sbuf, sizeof(sbuf), "start: %ld\r\n", sub->start);
 	strcat(httpheader, sbuf);
 
