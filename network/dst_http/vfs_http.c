@@ -44,6 +44,9 @@ typedef struct {
 
 int vfs_http_log = -1;
 static list_head_t activelist;  //ÓÃÀ´¼ì²â³¬Ê±
+
+#include "vfs_http_sub.c"
+
 static int insert_sub_task(t_uc_oss_http_header *header, int idx, int count, off_t start, off_t end)
 {
 	t_vfs_tasklist *task = NULL;
@@ -295,6 +298,8 @@ void svc_timeout()
 		if (now - peer->hbtime > g_config.timeout)
 			do_close(peer->fd);
 	}
+
+	check_fin_task();
 }
 
 void svc_finiconn(int fd)

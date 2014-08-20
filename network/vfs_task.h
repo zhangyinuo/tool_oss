@@ -102,9 +102,9 @@ int init_task_info();
 
 int add_task_to_alltask(t_vfs_tasklist *task);
 
-int check_task_from_alltask(char *fname);
+int check_task_from_alltask(char *fname, int idx, int count);
 
-int get_task_from_alltask(t_vfs_tasklist **task, t_task_base *base);
+int get_task_from_alltask(t_vfs_tasklist **task, char *filename, int idx, int count);
 
 int get_timeout_task_from_alltask(int timeout, timeout_task cb);
 

@@ -168,16 +168,17 @@ int init_task_info()
 	return 0;
 }
 
-static int get_vfs_task_hash(char *fname)
+static int get_vfs_task_hash(char *fname, int idx, int count)
 {
 	char buf[1024] = {0x0};
-	snprintf(buf, sizeof(buf), "%s", fname);
+	snprintf(buf, sizeof(buf), "%s_%d_%d", fname, idx, count);
 	return r5hash(buf);
 }
 
 int add_task_to_alltask(t_vfs_tasklist *task)
 {
-	int index = get_vfs_task_hash(task->task.base.filename)&TASK_MOD; 
+	t_task_sub *sub = &(task->task.sub);
+	int index = get_vfs_task_hash(task->task.base.filename, sub->idx, sub->count)&TASK_MOD; 
 	int ret = -1;
 	struct timespec to;
 	to.tv_sec = g_config.lock_timeout + time(NULL);
@@ -201,9 +202,9 @@ int add_task_to_alltask(t_vfs_tasklist *task)
 	return 0;
 }
 
-int check_task_from_alltask(char *fname)
+int check_task_from_alltask(char *fname, int idx, int count)
 {
-	int index = get_vfs_task_hash(fname)&TASK_MOD;
+	int index = get_vfs_task_hash(fname, idx, count)&TASK_MOD;
 	t_vfs_tasklist *task0 = NULL;
 	list_head_t *l;
 
@@ -227,7 +228,10 @@ int check_task_from_alltask(char *fname)
 	{
 		if (strcmp(fname, task0->task.base.filename))
 			continue;
-
+		if (idx != task0->task.sub.idx)
+			continue;
+		if (count != task0->task.sub.count)
+			continue;
 		ret = 0;
 		break;
 	}
@@ -236,9 +240,9 @@ int check_task_from_alltask(char *fname)
 	return ret;
 }
 
-int get_task_from_alltask(t_vfs_tasklist **task, t_task_base *base)
+int get_task_from_alltask(t_vfs_tasklist **task, char *filename, int idx, int count)
 {
-	int index = get_vfs_task_hash(base->filename)&TASK_MOD;
+	int index = get_vfs_task_hash(filename, idx, count)&TASK_MOD;
 	t_vfs_tasklist *task0 = NULL;
 	list_head_t *l;
 
@@ -260,7 +264,11 @@ int get_task_from_alltask(t_vfs_tasklist **task, t_task_base *base)
 	ret = -1;
 	list_for_each_entry_safe_l(task0, l, &alltask[index], hlist)
 	{
-		if (strcmp(base->filename, task0->task.base.filename))
+		if (strcmp(filename, task0->task.base.filename))
+			continue;
+		if (idx != task0->task.sub.idx)
+			continue;
+		if (count != task0->task.sub.count)
 			continue;
 
 		ret = 0;

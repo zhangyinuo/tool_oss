@@ -64,7 +64,7 @@ static void do_scan(struct conn *curcon, int *outdata, int type)
 {
 	LOG(vfs_agent_log, LOG_DEBUG, "task_timeout = %ld\n", g_config.task_timeout);
 	scan_some_status_task(TASK_CLEAN, get_data_from_task);
-	scan_some_status_task(TASK_FIN, get_data_from_task);
+	//scan_some_status_task(TASK_FIN, get_data_from_task);
 
 	char *data;
 	size_t len;
