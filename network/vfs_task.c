@@ -388,18 +388,11 @@ void check_task_timeout(t_vfs_tasklist *task)
 	time_t cur = time(NULL);
 	t_task_base *base = &(task->task.base);
 	if (cur - base->stime > g_config.task_timeout)
-		base->overstatus = OVER_TIMEOUT;
-
-	if (task->status != TASK_CLEAN && base->overstatus == OVER_TIMEOUT)
 	{
+		LOG(glogfd, LOG_ERROR, "ERR %s: time out\n", task->task.base.filename);
 		list_del_init(&(task->llist));
 		list_del_init(&(task->hlist));
 		list_del_init(&(task->userlist));
-		if (task->status != TASK_CLEAN && task->task.user &&(ROLE_CS == self_ipinfo.role || ROLE_TRACKER == self_ipinfo.role))
-		{
-			t_tmp_status *tmp = task->task.user;
-			task->task.user = NULL;
-		}
 		atomic_dec(&(taskcount[task->status]));
 		memset(&(task->task), 0, sizeof(task->task));
 		vfs_set_task(task, TASK_HOME);
@@ -411,11 +404,7 @@ void do_timeout_task()
 	int i = 0;
 	for (i = TASK_DELAY ; i < TASK_CLEAN; i++)
 	{
-		if (i == TASK_DELAY && self_ipinfo.role != ROLE_CS)
-			continue;
 		scan_some_status_task(i, check_task_timeout);
 	}
-	if (self_ipinfo.role == ROLE_CS)
-		scan_some_status_task(TASK_SYNC_VOSS,  check_task_timeout);
 }
 

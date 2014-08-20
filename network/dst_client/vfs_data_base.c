@@ -39,7 +39,7 @@ static int active_connect(char *ip, int port)
 	return fd;
 }
 
-static void create_header(char *httpheader, t_task_base *base, t_task_sub *sub)
+static void create_header(char *httpheader, t_task_base *base, t_task_sub *sub, off_t start)
 {
 	strcat(httpheader, "GET /us_oss HTTP/1.1\r\n");
 
@@ -53,7 +53,7 @@ static void create_header(char *httpheader, t_task_base *base, t_task_sub *sub)
 	strcat(httpheader, sbuf);
 
 	memset(sbuf, 0, sizeof(sbuf));
-	snprintf(sbuf, sizeof(sbuf), "start: %ld\r\n", sub->start);
+	snprintf(sbuf, sizeof(sbuf), "start: %ld\r\n", start);
 	strcat(httpheader, sbuf);
 
 	memset(sbuf, 0, sizeof(sbuf));
@@ -97,18 +97,6 @@ void check_task()
 				LOG(vfs_sig_log, LOG_DEBUG, "Process TASK_Q_SYNC_DIR!\n");
 		}
 		t_task_base *base = &(task->task.base);
-		if (base->retry > g_config.retry)
-		{
-			base->overstatus = OVER_TOO_MANY_TRY;
-			vfs_set_task(task, TASK_FIN);  
-			continue;
-		}
-		if (g_config.vfs_test)
-		{
-			base->overstatus = OVER_OK;
-			vfs_set_task(task, TASK_FIN);
-			continue;
-		}
 		int fd = active_connect(base->srcip, base->srcport);
 		if (fd < 0)
 		{
@@ -118,8 +106,9 @@ void check_task()
 			continue;
 		}
 		t_task_sub *sub = (t_task_sub *)&(task->task.sub);
+		off_t start = base->getlen + sub->start;
 		char httpheader[1024] = {0x0};
-		create_header(httpheader, base, sub);
+		create_header(httpheader, base, sub, start);
 		active_send(fd, httpheader);
 		struct conn *curcon = &acon[fd];
 		vfs_cs_peer *peer = (vfs_cs_peer *) curcon->user;

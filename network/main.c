@@ -84,11 +84,20 @@ static int parse_args(int argc, char* argv[]) {
 	return 0;	
 }
 /* main thread loop */
-static void main_loop(struct threadstat *thst) {
+static void main_loop(struct threadstat *thst) 
+{
+	time_t last = time(NULL);
 	while(!stop) {
-		sleep(2);
+		sleep(5);
 		scan_delay_task();
 		thread_reached(thst);
+
+		time_t cur = time(NULL);
+		if (cur - last > 3600)
+		{
+			last = cur;
+			do_timeout_task();
+		}
 	}
 }
 

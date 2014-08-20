@@ -57,12 +57,16 @@ static int insert_sub_task(t_uc_oss_http_header *header, int idx, int count, off
 
 	t_task_base *base = (t_task_base *) &(task->task.base);
 	t_task_sub *sub = (t_task_sub *) &(task->task.sub);
+	memset(base, 0, sizeof(t_task_base));
+	memset(sub, 0, sizeof(t_task_sub));
 
 	sub->idx = idx;
 	sub->count = count;
 
 	sub->start = start;
 	sub->end = end;
+	sub->starttime = time(NULL);
+	base->stime = sub->starttime;
 
 	base->fsize = header->datalen;
 	snprintf(base->filename, sizeof(base->filename), "%s", header->filename);

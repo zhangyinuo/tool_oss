@@ -147,6 +147,16 @@ static int check_task_allsub_isok(char *filename, int count)
 
 static void clear_alltask_timeout(char *filename, int count)
 {
+	LOG(vfs_http_log, LOG_NORMAL, "clear %s\n");
+	t_vfs_tasklist *task = NULL;
+	int idx = 1;
+	for (; idx <= count; idx++)
+	{
+		if (get_task_from_alltask(&task, filename, idx, count))
+			LOG(vfs_http_log, LOG_ERROR, "get %s %d %d err %m\n", filename, idx, count);
+		else
+			vfs_set_task(task, TASK_HOME);
+	}
 }
 
 static void check_fin_task()
