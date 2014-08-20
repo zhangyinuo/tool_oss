@@ -73,32 +73,6 @@ static int insert_sub_task(t_uc_oss_http_header *header, int idx, int count, off
 	return 0;
 }
 
-static int do_req(t_uc_oss_http_header *header)
-{
-	if ( header->datalen == 0)
-		return 0;
-
-	int splic_count = header->datalen / g_config.splic_min_size;
-	if (header->datalen % g_config.splic_min_size)
-		splic_count++;
-
-	int idx = 1;
-	off_t start = 0;
-	off_t end = 0;
-	for(; idx <= splic_count; idx++)
-	{
-		if (idx == splic_count)
-			end = header->datalen - 1;
-		else
-			end = start + g_config.splic_min_size - 1;
-
-		if (insert_sub_task(header, idx, splic_count, start, end))
-			return -1;
-		start += g_config.splic_min_size;
-	}
-	return 0;
-}
-
 int svc_init() 
 {
 	char *logname = myconfig_get_value("log_server_logname");
@@ -143,6 +117,52 @@ int svc_initconn(int fd)
 }
 
 #include "vfs_http_sub.c"
+
+static int do_req(t_uc_oss_http_header *header)
+{
+	if (header->type == 1)
+	{
+		LOG(vfs_http_log, LOG_NORMAL, "unlink %s:%s\n", header->srcip, header->filename);
+		unlink(header->filename);
+	}
+	char md5view[36] = {0x0};
+	getfilemd5view((const char *)header->filename, (unsigned char* )md5view);
+	if (strcmp(md5view, header->filemd5) == 0)
+	{
+		LOG(vfs_http_log, LOG_NORMAL, "file %s:%s md5 ok\n", header->srcip, header->filename);
+		char httpheader[1024] = {0x0};
+		create_header(httpheader, header->filename, header->filemd5, 5);
+
+		int fd = active_connect(header->srcip, 80);
+		if (fd < 0)
+			LOG(vfs_http_log, LOG_ERROR, "active_connect %s:80 err %m\n", header->srcip);
+		else
+			active_send(fd, httpheader);
+		return 0;
+	}
+	if ( header->datalen == 0)
+		return 0;
+
+	int splic_count = header->datalen / g_config.splic_min_size;
+	if (header->datalen % g_config.splic_min_size)
+		splic_count++;
+
+	int idx = 1;
+	off_t start = 0;
+	off_t end = 0;
+	for(; idx <= splic_count; idx++)
+	{
+		if (idx == splic_count)
+			end = header->datalen - 1;
+		else
+			end = start + g_config.splic_min_size - 1;
+
+		if (insert_sub_task(header, idx, splic_count, start, end))
+			return -1;
+		start += g_config.splic_min_size;
+	}
+	return 0;
+}
 
 static char * parse_item(char *src, char *item, char **end)
 {
@@ -243,7 +263,7 @@ static int check_request(int fd, char* data, int len)
 static int handle_request(int cfd) 
 {
 	char httpheader[256] = {0};
-	int len = sprintf(httpheader, "HTTP/1.1 200 OK\r\n\r\n");
+	int len = sprintf(httpheader, "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n");
 	set_client_data(cfd, httpheader, len);
 	return 0;
 }
