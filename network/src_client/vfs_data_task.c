@@ -33,11 +33,12 @@ int do_prepare_recvfile(int fd, off_t fsize)
 	}
 	t_vfs_tasklist *task0 = peer->recvtask;
 	t_task_base *base = &(task0->task.base);
+	t_task_sub *sub = &(task0->task.sub);
 	base->fsize = fsize;
 
 	if (peer->local_in_fd > 0)
 		close(peer->local_in_fd);
-	if (open_tmp_localfile_4_write(base, &(peer->local_in_fd), fsize) != LOCALFILE_OK) 
+	if (open_tmp_localfile_4_write(base, &(peer->local_in_fd), sub) != LOCALFILE_OK) 
 	{
 		LOG(vfs_sig_log, LOG_ERROR, "fd[%d] open_tmp_localfile_4_write error %s\n", fd);
 		task0->task.base.overstatus = OVER_E_OPEN_DSTFILE;

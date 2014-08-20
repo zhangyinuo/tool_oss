@@ -21,15 +21,6 @@ extern t_ip_info self_ipinfo;
  *本文件有优化余地
  */
 
-static uint32_t g_index = 0;
-
-static void get_tmpstr(char *d, int len)
-{
-	char t[16] = {0x0};
-	get_strtime(t);
-	snprintf(d, len, "_%s_%d", t, g_index++);
-}
-
 static int createdir(char *file)
 {
 	char *pos = file;
@@ -147,35 +138,20 @@ int open_localfile_4_read(t_task_base *task, int *fd)
 	return LOCALFILE_OK;
 }
 
-int open_tmp_localfile_4_write(t_task_base *task, int *fd, off_t fsize)
+int open_tmp_localfile_4_write(t_task_base *task, int *fd, t_task_sub *sub)
 {
-	char outdir[256] = {0x0};
-	snprintf(outdir, sizeof(outdir), "%s/%s", g_config.docroot, task->filename);
-	if (createdir(outdir))
+	snprintf(task->tmpfile, sizeof(task->tmpfile), "%s_%ld_%ld", task->filename, sub->start, sub->end);
+	if (createdir(task->tmpfile))
 	{
-		LOG(glogfd, LOG_ERROR, "dir %s create %m!\n", outdir);
+		LOG(glogfd, LOG_ERROR, "dir %s create %m!\n", task->tmpfile);
 		return LOCALFILE_DIR_E;
 	}
-	*fd = open(outdir, O_CREAT | O_WRONLY| O_LARGEFILE |O_TRUNC, 0644);
+	*fd = open(task->tmpfile, O_CREAT | O_WRONLY| O_LARGEFILE |O_TRUNC, 0644);
 	if (*fd < 0)
 	{
-		LOG(glogfd, LOG_ERROR, "open %s err %m\n", outdir);
+		LOG(glogfd, LOG_ERROR, "open %s err %m\n", task->tmpfile);
 		return LOCALFILE_OPEN_E;
 	}
-
-	strcat(outdir, ".size");
-	int tfd = open(outdir, O_CREAT | O_WRONLY | O_LARGEFILE |O_TRUNC, 0644);
-	if(tfd < 0)
-	{
-		LOG(glogfd, LOG_ERROR, "open %s err %m\n", outdir);
-		close(*fd);
-		return LOCALFILE_OPEN_E;
-	}
-
-	char buf[64] = {0x0};
-	snprintf(buf, sizeof(buf), "%ld\n", fsize);
-	write(tfd, buf, strlen(buf));
-	close(tfd);
 	return LOCALFILE_OK;
 }
 

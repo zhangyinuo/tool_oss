@@ -61,7 +61,7 @@ typedef struct {
 
 typedef struct {
 	t_task_base base;
-	t_task_base sub;
+	t_task_sub sub;
 	void *user;
 }t_vfs_taskinfo;
 
