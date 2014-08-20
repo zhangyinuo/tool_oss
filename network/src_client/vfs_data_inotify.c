@@ -75,15 +75,11 @@ static void inotify_event_handler(struct inotify_event *event)
 		LOG(vfs_sig_log, LOG_DEBUG, "inotify event has no filename, go next!\n");
 		return;
 	}
+	LOG(vfs_sig_log, LOG_DEBUG, "inotify event filename [%s]!\n", filename);
 
 	if(filename[0] == '.')
 	{
 		LOG(vfs_sig_log, LOG_TRACE, "tmpfile [%s] , i dont care!\n", filename);
-		return;
-	}
-	if (check_file_filter(filename))
-	{
-		LOG(vfs_sig_log, LOG_TRACE, "inotify event filename %s check not ok!\n", filename);
 		return;
 	}
 

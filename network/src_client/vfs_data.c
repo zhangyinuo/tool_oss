@@ -157,20 +157,9 @@ static int check_req(int fd)
 		return RECV_CLOSE;
 	}
 
-	char *pleng = strstr(data, "Content-Length: ");
-	if (pleng == NULL)
-	{
-		LOG(vfs_sig_log, LOG_ERROR, "%s:%d fd[%d] ERROR Content-Length: !\n", FUNC, LN, fd);
-		return RECV_CLOSE;
-	}
-
-	off_t fsize = atol(pleng + strlen("Content-Length: "));
-
 	int clen = end - data;
-	int ret = do_req(fd, fsize);
-	LOG(vfs_sig_log, LOG_DEBUG, "%s:%d fd[%d] Content-Length: %ld!\n", FUNC, LN, fd, fsize);
 	consume_client_data(fd, clen);
-	return ret;
+	return RECV_CLOSE;
 }
 
 int svc_recv(int fd) 
@@ -247,9 +236,7 @@ recvfileing:
 			break;
 		if (subret == RECV_CLOSE)
 		{
-			task0->task.base.overstatus = OVER_E_OPEN_SRCFILE;
 			peer->recvtask = NULL;
-			vfs_set_task(task0, TASK_FIN);
 			return RECV_CLOSE;
 		}
 		if (peer->sock_stat == RECV_BODY_ING)

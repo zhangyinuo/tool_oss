@@ -110,10 +110,10 @@ void check_task()
 			return;
 		ret = vfs_get_task(&task, TASK_WAIT);
 		if (ret != GET_TASK_OK)
-				return ;
+			return ;
 
 		t_task_base *base = &(task->task.base);
-		if (inotify_new_task(base->filename, base->filemd5, base->type - 0x30, base->fsize))
+		if (inotify_new_task(base->filename, base->filemd5, base->type, base->fsize))
 			vfs_set_task(task, TASK_WAIT_TMP);
 		else
 			vfs_set_task(task, TASK_HOME);

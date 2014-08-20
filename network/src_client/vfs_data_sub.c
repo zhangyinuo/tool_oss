@@ -5,7 +5,7 @@
 */
 
 #include "c_api.h"
-static int do_req(int fd, off_t fsize)
+int do_req(int fd, off_t fsize)
 {
 	return do_prepare_recvfile(fd, fsize);
 }
