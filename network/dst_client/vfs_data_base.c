@@ -59,7 +59,7 @@ static void create_header(char *httpheader, t_task_base *base, t_task_sub *sub)
 	strcat(httpheader, sbuf);
 
 	memset(sbuf, 0, sizeof(sbuf));
-	snprintf(sbuf, sizeof(sbuf), "filemd5: llllllldd\r\n\r\n");
+	snprintf(sbuf, sizeof(sbuf), "filemd5: %s\r\n\r\n", base->filemd5);
 	strcat(httpheader, sbuf);
 }
 

@@ -31,4 +31,5 @@ install:
 	cd network/dst_client; cp *.so $(installdir)/bin
 	cd network/src_http; cp *.so $(installdir)/bin
 	cd network/src_client; cp *.so $(installdir)/bin
+	cd script/; cp *.sh $(installdir)/bin
 	cd network/voss; cp *.so $(installdir)/bin

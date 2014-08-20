@@ -156,7 +156,7 @@ int open_tmp_localfile_4_write(t_task_base *task, int *fd, off_t fsize)
 		LOG(glogfd, LOG_ERROR, "dir %s create %m!\n", outdir);
 		return LOCALFILE_DIR_E;
 	}
-	*fd = open(outdir, O_CREAT | O_RDWR | O_LARGEFILE, 0644);
+	*fd = open(outdir, O_CREAT | O_WRONLY| O_LARGEFILE, 0644);
 	if (*fd < 0)
 	{
 		LOG(glogfd, LOG_ERROR, "open %s err %m\n", outdir);
@@ -164,7 +164,7 @@ int open_tmp_localfile_4_write(t_task_base *task, int *fd, off_t fsize)
 	}
 
 	strcat(outdir, ".size");
-	int tfd = open(outdir, O_CREAT | O_RDWR | O_LARGEFILE, 0644);
+	int tfd = open(outdir, O_CREAT | O_WRONLY | O_LARGEFILE, 0644);
 	if(tfd < 0)
 	{
 		LOG(glogfd, LOG_ERROR, "open %s err %m\n", outdir);
