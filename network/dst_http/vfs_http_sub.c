@@ -1,4 +1,4 @@
-static int do_merge_file(char *filename, int count)
+static int do_merge_file(char *filename, int count, char *filemd5)
 {
 	int ofd = open(filename, O_CREAT | O_WRONLY| O_LARGEFILE |O_TRUNC, 0644);
 	if (ofd < 0)
@@ -45,12 +45,25 @@ static int do_merge_file(char *filename, int count)
 			}
 			retlen -= len;
 		}
-		vfs_set_task(task, TASK_HOME);
 		close(ifd);
+		if (unlink(task->task.base.tmpfile))
+		{
+			LOG(vfs_http_log, LOG_ERROR, "unlink %s err %m\n", task->task.base.tmpfile);
+			error = -1;
+		}
+		vfs_set_task(task, TASK_HOME);
 		if (error)
 			break;
 	}
 	close(ofd);
+
+	char md5view[36] = {0x0};
+	getfilemd5view((const char *)filename, (unsigned char* )md5view);
+	if (strcmp(md5view, filemd5))
+	{
+		LOG(vfs_http_log, LOG_ERROR, "%s md5 [%s:%s]\n", filename, filemd5, md5view);
+		return -1;
+	}
 	return 0;
 }
 
@@ -99,7 +112,7 @@ static void check_fin_task()
 		{
 			add_task_to_alltask(task);
 			if (check_task_allsub_isok(task->task.base.filename, task->task.sub.count) == 0)
-				do_merge_file(task->task.base.filename, task->task.sub.count);
+				do_merge_file(task->task.base.filename, task->task.sub.count, task->task.base.filemd5);
 		}
 	}
 }
