@@ -13,15 +13,18 @@
 volatile extern int maintain ;		//1-维护配置 0 -可以使用
 extern t_vfs_up_proxy g_proxy;
 
-static inline int isDigit(const char *ptr) 
+static int active_send(int fd, char *data)
 {
-	return isdigit(*(unsigned char *)ptr);
+	LOG(vfs_sig_log, LOG_DEBUG, "send %d cmdid %s\n", fd, data);
+	set_client_data(fd, data, strlen(data));
+	modify_fd_event(fd, EPOLLOUT);
+	return 0;
 }
 
-static int active_connect(char *ip, int port)
+static int active_connect()
 {
-	if (port < 80)
-		port = 80;
+	char *ip = myconfig_get_value("iplist_serverip");
+	int port = 80;
 	int fd = createsocket(ip, port);
 	if (fd < 0)
 	{
@@ -37,6 +40,51 @@ static int active_connect(char *ip, int port)
 	add_fd_2_efd(fd);
 	LOG(vfs_sig_log, LOG_NORMAL, "fd [%d] connect %s:%d\n", fd, ip, port);
 	return fd;
+}
+
+static void create_header(char *httpheader, char *filename, char *filemd5, int type, size_t datalen)
+{
+	strcat(httpheader, "GET /us_oss HTTP/1.1\r\n");
+
+	strcat(httpheader, "filename: ");
+	strcat(httpheader, filename);
+	strcat(httpheader, "\r\n");
+
+	char sbuf[64] = {0x0};
+	snprintf(sbuf, sizeof(sbuf), "type: %d\r\n", type);
+	strcat(httpheader, sbuf);
+
+	memset(sbuf, 0, sizeof(sbuf));
+	snprintf(sbuf, sizeof(sbuf), "datalen: %ld\r\n", datalen);
+	strcat(httpheader, sbuf);
+
+	memset(sbuf, 0, sizeof(sbuf));
+	snprintf(sbuf, sizeof(sbuf), "start: 0\r\n");
+	strcat(httpheader, sbuf);
+
+	memset(sbuf, 0, sizeof(sbuf));
+	snprintf(sbuf, sizeof(sbuf), "end: %ld\r\n", datalen - 1);
+	strcat(httpheader, sbuf);
+
+	memset(sbuf, 0, sizeof(sbuf));
+	snprintf(sbuf, sizeof(sbuf), "filemd5: %s\r\n\r\n", filemd5);
+	strcat(httpheader, sbuf);
+}
+
+static int inotify_new_task(char *filename, char *filemd5, int type, size_t datalen)
+{
+	char httpheader[1024] = {0x0};
+
+	create_header(httpheader, filename, filemd5, type, datalen);
+
+	int fd = active_connect();
+	if (fd < 0)
+	{
+		LOG(vfs_sig_log, LOG_ERROR, "connect err %m\n");
+		return -1;
+	}
+
+	return active_send(fd, httpheader);
 }
 
 void check_task()
@@ -62,40 +110,13 @@ void check_task()
 			return;
 		ret = vfs_get_task(&task, TASK_WAIT);
 		if (ret != GET_TASK_OK)
-		{
-			LOG(vfs_sig_log, LOG_TRACE, "vfs_get_task get notihng %d\n", ret);
-			ret = vfs_get_task(&task, TASK_Q_SYNC_DIR);
-			if (ret != GET_TASK_OK)
 				return ;
-			else
-				LOG(vfs_sig_log, LOG_DEBUG, "Process TASK_Q_SYNC_DIR!\n");
-		}
+
 		t_task_base *base = &(task->task.base);
-		if (base->retry > g_config.retry)
-		{
-			base->overstatus = OVER_TOO_MANY_TRY;
-			vfs_set_task(task, TASK_FIN);  
-			continue;
-		}
-		if (g_config.vfs_test)
-		{
-			base->overstatus = OVER_OK;
-			vfs_set_task(task, TASK_FIN);
-			continue;
-		}
-		int fd = active_connect(base->srcip, base->srcport);
-		if (fd < 0)
-		{
-			LOG(vfs_sig_log, LOG_ERROR, "connect %s %d error %m\n", base->srcip, base->srcport);
-			base->overstatus = OVER_TOO_MANY_TRY;
-			vfs_set_task(task, TASK_FIN);  
-			continue;
-		}
-		active_send(fd, base->data);
-		struct conn *curcon = &acon[fd];
-		vfs_cs_peer *peer = (vfs_cs_peer *) curcon->user;
-		peer->recvtask = task;
-		peer->sock_stat = RECV_HEAD_ING;
+		if (inotify_new_task(base->filename, base->filemd5, base->type - 0x30, base->fsize))
+			vfs_set_task(task, TASK_WAIT_TMP);
+		else
+			vfs_set_task(task, TASK_HOME);
 	}
 }
 

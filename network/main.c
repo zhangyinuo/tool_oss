@@ -28,6 +28,7 @@
 #include "vfs_task.h"
 #include "vfs_agent.h"
 #include "vfs_time_stamp.h"
+#include "vfs_file_filter.h"
 #include "vfs_tmp_status.h"
 #include "vfs_timer.h"
 
@@ -113,6 +114,7 @@ int main(int argc, char **argv) {
 	ICALL(init_global);
 	ICALL(vfs_init);
 	ICALL(init_task_info);
+	ICALL(init_file_filter);
 	if (get_self_info(&self_ipinfo))
 	{
 		LOG(glogfd, LOG_ERROR, "get_self_role ERR!\n");

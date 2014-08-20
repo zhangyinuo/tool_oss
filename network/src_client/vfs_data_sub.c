@@ -5,14 +5,6 @@
 */
 
 #include "c_api.h"
-int active_send(int fd, char *data)
-{
-	LOG(vfs_sig_log, LOG_DEBUG, "send %d cmdid %s\n", fd, data);
-	set_client_data(fd, data, strlen(data));
-	modify_fd_event(fd, EPOLLOUT);
-	return 0;
-}
-
 static int do_req(int fd, off_t fsize)
 {
 	return do_prepare_recvfile(fd, fsize);

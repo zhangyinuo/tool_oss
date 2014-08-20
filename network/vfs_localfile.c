@@ -9,6 +9,7 @@
 #include "vfs_file_filter.h"
 #include "vfs_timer.h"
 #include "common.h"
+#include "util.h"
 #include "vfs_del_file.h"
 #include <sys/vfs.h>
 #include <utime.h>
@@ -205,20 +206,14 @@ void localfile_link_task(t_task_base *task)
 
 int get_localfile_stat(t_task_base *task)
 {
-	char outdir[256] = {0x0};
-	if (get_localdir(task, outdir))
-		return LOCALFILE_DIR_E;
-	char *t = strrchr(task->filename, '/');
-	if (t == NULL)
-		return LOCALFILE_DIR_E;
-	t++;
-	strcat(outdir, t);
 	struct stat filestat;
-	if (stat(outdir, &filestat))
+	if (stat(task->filename, &filestat))
 	{
-		LOG(glogfd, LOG_ERROR, "stat file %s err %m!\n", outdir);
+		LOG(glogfd, LOG_ERROR, "stat file %s err %m!\n", task->filename);
 		return LOCALFILE_DIR_E;
 	}
+	task->fsize = filestat.st_size;
+	getfilemd5view((const char*)task->filename, (unsigned char *)task->filemd5);
 	return LOCALFILE_OK;
 }
 

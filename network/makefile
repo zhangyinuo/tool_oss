@@ -22,7 +22,8 @@ OBJ= main.o	\
 	vfs_agent.o \
 	vfs_timer.o \
 	vfs_maintain.o \
-	parsepara.o
+	parsepara.o	\
+	vfs_file_filter.o
 
 OBJ += $(SUBOBJS)
 		

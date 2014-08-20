@@ -32,11 +32,12 @@ static list_head_t online_list[256]; //用来快速定位查找
 int g_proxyed = 0;
 t_vfs_up_proxy g_proxy;
 int svc_initconn(int fd); 
-int active_send(int fd, char *data);
 const char *sock_stat_cmd[] = {"LOGOUT", "CONNECTED", "LOGIN", "IDLE", "PREPARE_RECVFILE", "RECVFILEING", "SENDFILEING", "LAST_STAT"};
 
 #include "vfs_data_base.c"
 #include "vfs_data_sub.c"
+
+#include "vfs_data_inotify.c"
 
 static int init_proxy_info()
 {
@@ -75,6 +76,16 @@ int svc_init()
 		LOG(vfs_sig_log, LOG_NORMAL, "proxy mode!\n");
 	else
 		LOG(vfs_sig_log, LOG_NORMAL, "not proxy mode!\n");
+
+	pthread_t tid = 0;
+	int rc = 0;
+	LOG(vfs_sig_log, LOG_DEBUG, "inotify thread start ....\n");
+	if((rc = pthread_create(&tid, NULL, (void*(*)(void*))start_inotify_thread, NULL)) != 0)
+	{
+		LOG(vfs_sig_log, LOG_ERROR, "inotify thread start error:%d\n", rc);
+		return -1;
+	}
+	LOG(vfs_sig_log, LOG_DEBUG, "inotify thread start finish, result:%d\n", rc);
 	
 	return 0;
 }

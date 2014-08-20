@@ -4,6 +4,21 @@
 * 56VFS may be copied only under the terms of the GNU General Public License V3
 */
 
+#include <sys/inotify.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/prctl.h>
+
+#include "vfs_file_filter.h"
+
+#define MAX_WATCH 10240
+char watch_dirs[MAX_WATCH][256];
+int inotify_fd = -1;
+fd_set fds;
+uint32_t mask = IN_CLOSE_WRITE|IN_DELETE|IN_MOVED_FROM|IN_MOVED_TO;
+
 static int add_watch(int fd, char *indir, unsigned int mask)
 {
 	int wd = inotify_add_watch(fd, indir, mask);
@@ -76,28 +91,16 @@ static void inotify_event_handler(struct inotify_event *event)
 	strcpy(path, watch_dirs[wd]);
 	strcat(path, "/");
 	strcat(path, filename);
-	if (self_stat == OFF_LINE)
-	{
-		LOG(vfs_sig_log, LOG_DEBUG, "offline! ignore %s\n", path);
-		return;
-	}
-
-	if (check_sync_dir_list(path) == 0)
-	{
-		LOG(vfs_sig_log, LOG_DEBUG, "inotify event filename %s check re_sync not ok!\n", path);
-		return;
-	}
 
     t_task_base task;
 	memset(&task, 0, sizeof(task));
 
 	snprintf(task.filename, sizeof(task.filename), "%s", path);
-	snprintf(task.src_domain, sizeof(task.src_domain), "%s", hostname);
 	if((event->mask & IN_CLOSE_WRITE) || (event->mask & IN_MOVED_TO)) 
 	{
 		if (get_localfile_stat(&task) != LOCALFILE_OK)
 		{
-			LOG(vfs_sig_log, LOG_ERROR, "get_localfile_stat err %s %s %m\n", task.filename, task.src_domain);
+			LOG(vfs_sig_log, LOG_ERROR, "get_localfile_stat err %s %m\n", task.filename);
 			return;
 		}
 		task.type = TASK_ADDFILE;
@@ -106,10 +109,7 @@ static void inotify_event_handler(struct inotify_event *event)
 	if((event->mask & IN_DELETE) || (event->mask & IN_MOVED_FROM)) 
 	{
 		LOG(vfs_sig_log, LOG_DEBUG, "inotify file delete or move away %s\n", path);
-		task.mtime = time(NULL);
-		task.ctime = task.mtime;
 		task.type = TASK_DELFILE;
-		add_2_del_file(&task);
 	}
  	   
 	t_vfs_tasklist *vfs_task;
@@ -120,21 +120,21 @@ static void inotify_event_handler(struct inotify_event *event)
 		return;
 	}
 	memset(&(vfs_task->task), 0, sizeof(t_vfs_taskinfo));
-	task.starttime = time(NULL);
 	memcpy(&(vfs_task->task.base), &task, sizeof(task));
-	vfs_set_task(vfs_task, TASK_WAIT_SYNC);	
+	vfs_set_task(vfs_task, TASK_WAIT);	
 	
 	LOG(vfs_sig_log, LOG_DEBUG, "inotify add task to task_wait filepath %s, task type %d\n", task.filename, task.type);
 	
 	return;
 }   
 
-void  start_inotify_thread(void * arg)
+static void start_inotify_thread(void * arg)
 {
 
 #ifndef PR_SET_NAME
 #define PR_SET_NAME 15
 #endif
+	memset(watch_dirs, 0, sizeof(watch_dirs));
 	prctl(PR_SET_NAME, "fcs_inotify", 0, 0, 0);
 
 	inotify_fd = inotify_init();
