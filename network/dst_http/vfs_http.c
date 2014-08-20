@@ -89,7 +89,7 @@ static int do_req(t_uc_oss_http_header *header)
 		if (idx == splic_count)
 			end = header->datalen - 1;
 		else
-			end = start + g_config.splic_min_size;
+			end = start + g_config.splic_min_size - 1;
 
 		if (insert_sub_task(header, idx, splic_count, start, end))
 			return -1;
