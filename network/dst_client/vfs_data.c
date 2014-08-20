@@ -205,7 +205,7 @@ recvfileing:
 		{
 			if (close_tmp_check_mv(&(task->base), peer->local_in_fd) != LOCALFILE_OK)
 			{
-				LOG(vfs_sig_log, LOG_ERROR, "fd[%d] get file %s error!\n", fd, task->base.filename);
+				LOG(vfs_sig_log, LOG_ERROR, "fd[%d] get file %s error!\n", fd, task->base.tmpfile);
 				task0->task.base.overstatus = OVER_E_MD5;
 				peer->recvtask = NULL;
 				vfs_set_task(task0, TASK_FIN);
@@ -215,7 +215,7 @@ recvfileing:
 			}
 			else
 			{
-				LOG(vfs_sig_log, LOG_NORMAL, "fd[%d:%u] get file %s ok!\n", fd, peer->ip, task->base.filename);
+				LOG(vfs_sig_log, LOG_NORMAL, "fd[%d:%u] get file %s ok!\n", fd, peer->ip, task->base.tmpfile);
 				task0->task.base.overstatus = OVER_OK;
 				vfs_set_task(task0, TASK_FIN);
 			}

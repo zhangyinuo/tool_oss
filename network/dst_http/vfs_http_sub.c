@@ -89,7 +89,7 @@ static void check_fin_task()
 			{
 				task->task.base.retry++;
 				task->task.base.overstatus = OVER_UNKNOWN;
-				LOG(vfs_http_log, LOG_NORMAL, "retry[%d:%d:%s]\n", task->task.base.retry, g_config.retry, task->task.base.filename);
+				LOG(vfs_http_log, LOG_NORMAL, "retry[%d:%d:%s]\n", task->task.base.retry, g_config.retry, task->task.base.tmpfile);
 				vfs_set_task(task, TASK_WAIT);
 			}
 			else
