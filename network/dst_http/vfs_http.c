@@ -124,6 +124,7 @@ static int do_req(t_uc_oss_http_header *header)
 	{
 		LOG(vfs_http_log, LOG_NORMAL, "unlink %s:%s\n", header->srcip, header->filename);
 		unlink(header->filename);
+		return 0;
 	}
 	char md5view[36] = {0x0};
 	getfilemd5view((const char *)header->filename, (unsigned char* )md5view);
