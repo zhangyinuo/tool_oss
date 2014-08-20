@@ -277,6 +277,6 @@ int init_log()
 	    printf("\7%s: pthread_create(): %m\n", strerror(errno));
 	    return -1;
 	}
-	sleep(1);
+	sleep(3);
 	return 0;
 }
