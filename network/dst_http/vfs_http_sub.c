@@ -83,7 +83,7 @@ static void check_fin_task()
 		once++;
 		if (once > 128)
 			return;
-		if (OVER_OK == task->task.base.overstatus)
+		if (OVER_OK != task->task.base.overstatus)
 		{
 			if (g_config.retry && task->task.base.retry < g_config.retry)
 			{
