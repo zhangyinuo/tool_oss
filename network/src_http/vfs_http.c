@@ -312,4 +312,7 @@ void svc_finiconn(int fd)
 		return;
 	http_peer *peer = (http_peer *) curcon->user;
 	list_del_init(&(peer->alist));
+	memset(curcon->user, 0, sizeof(http_peer));
+	free(curcon->user);
+	curcon->user = NULL;
 }

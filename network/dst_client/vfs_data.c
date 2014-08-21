@@ -300,7 +300,7 @@ void svc_finiconn(int fd)
 	if (peer->recvtask)
 	{
 		tasklist = peer->recvtask;
-		LOG(vfs_sig_log, LOG_ERROR, "error %s!\n", tasklist->task.base.filename);
+		LOG(vfs_sig_log, LOG_ERROR, "error %s!\n", tasklist->task.base.tmpfile);
 		tasklist->task.base.overstatus = OVER_PEERERR;
 		vfs_set_task(tasklist, TASK_FIN);
 	}
