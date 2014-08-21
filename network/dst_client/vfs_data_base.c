@@ -20,8 +20,6 @@ static inline int isDigit(const char *ptr)
 
 static int active_connect(char *ip, int port)
 {
-	if (port < 80)
-		port = 80;
 	int fd = createsocket(ip, port);
 	if (fd < 0)
 	{
@@ -97,7 +95,7 @@ void check_task()
 				LOG(vfs_sig_log, LOG_DEBUG, "Process TASK_Q_SYNC_DIR!\n");
 		}
 		t_task_base *base = &(task->task.base);
-		int fd = active_connect(base->srcip, base->srcport);
+		int fd = active_connect(base->srcip, g_config.sig_port);
 		if (fd < 0)
 		{
 			LOG(vfs_sig_log, LOG_ERROR, "connect %s %d error %m\n", base->srcip, base->srcport);
@@ -106,7 +104,9 @@ void check_task()
 			continue;
 		}
 		t_task_sub *sub = (t_task_sub *)&(task->task.sub);
+		check_last_file(base, sub);
 		off_t start = base->getlen + sub->start;
+		//off_t start = sub->start;
 		char httpheader[1024] = {0x0};
 		create_header(httpheader, base, sub, start);
 		active_send(fd, httpheader);

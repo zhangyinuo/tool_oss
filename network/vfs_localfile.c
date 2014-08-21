@@ -89,6 +89,35 @@ int check_localfile_md5(char *srcfile, char *md5sum)
 	return strncmp(md5sum, filemd5, 32);
 }
 
+int check_last_file(t_task_base *task, t_task_sub *sub)
+{
+	char outfile[256] = {0x0};
+	get_localdir(task->filename, outfile);
+	snprintf(task->tmpfile, sizeof(task->tmpfile), "%s_%ld_%ld", outfile, sub->start, sub->end);
+	if (createdir(task->tmpfile))
+	{
+		LOG(glogfd, LOG_ERROR, "dir %s create %m!\n", task->tmpfile);
+		return LOCALFILE_DIR_E;
+	}
+	struct stat filestat;
+	if (stat(task->tmpfile, &filestat))
+		return LOCALFILE_OK;
+
+	off_t reqlen = sub->end - sub->start + 1;
+	if (reqlen <= filestat.st_size)
+	{
+		task->getlen = 0;
+		if (unlink(task->tmpfile))
+		{
+			LOG(glogfd, LOG_ERROR, "unlink %s err %m!\n", task->tmpfile);
+			return LOCALFILE_DIR_E;
+		}
+		return LOCALFILE_OK;
+	}
+	task->getlen = filestat.st_size;
+	return LOCALFILE_OK;
+}
+
 int open_tmp_localfile_4_write(t_task_base *task, int *fd, t_task_sub *sub)
 {
 	char outfile[256] = {0x0};
@@ -100,6 +129,7 @@ int open_tmp_localfile_4_write(t_task_base *task, int *fd, t_task_sub *sub)
 		return LOCALFILE_DIR_E;
 	}
 	*fd = open(task->tmpfile, O_CREAT | O_WRONLY| O_LARGEFILE |O_APPEND, 0644);
+	//*fd = open(task->tmpfile, O_CREAT | O_WRONLY| O_LARGEFILE |O_TRUNC, 0644);
 	if (*fd < 0)
 	{
 		LOG(glogfd, LOG_ERROR, "open %s err %m\n", task->tmpfile);

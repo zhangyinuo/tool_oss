@@ -8,8 +8,6 @@ int active_send(int fd, char *data)
 
 static int active_connect(char *ip, int port)
 {
-	if (port < 80)
-		port = 80;
 	int fd = createsocket(ip, port);
 	if (fd < 0)
 	{
@@ -125,9 +123,9 @@ static int do_merge_file(char *srcip, char *filename, int count, char *filemd5)
 	char httpheader[1024] = {0x0};
 	create_header(httpheader, filename, filemd5, type);
 
-	int fd = active_connect(srcip, 80);
+	int fd = active_connect(srcip, g_config.sig_port);
 	if (fd < 0)
-		LOG(vfs_http_log, LOG_ERROR, "active_connect %s:80 err %m\n", srcip);
+		LOG(vfs_http_log, LOG_ERROR, "active_connect %s:%d err %m\n", srcip, g_config.sig_port);
 	else
 		active_send(fd, httpheader);
 	return 0;
