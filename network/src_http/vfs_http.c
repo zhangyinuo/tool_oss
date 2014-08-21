@@ -48,14 +48,15 @@ static list_head_t activelist;  //”√¿¥ºÏ≤‚≥¨ ±
 
 static void update_sync_time(char *filename)
 {
-	char sync_time_file[256] = {0x0};
-	snprintf(sync_time_file, sizeof(sync_time_file), "%s/.sync_time", dirname(filename));
 	struct stat filestat;
 	if (stat(filename, &filestat))
 	{
 		LOG(vfs_http_log, LOG_ERROR, "stat %s error %m\n", filename);
 		return ;
 	}
+
+	char sync_time_file[256] = {0x0};
+	snprintf(sync_time_file, sizeof(sync_time_file), "%s/.sync_time", dirname(filename));
 
 	FILE *fp = fopen(sync_time_file, "w");
 	if (!fp)
