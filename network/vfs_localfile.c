@@ -147,7 +147,7 @@ int open_tmp_localfile_4_write(t_task_base *task, int *fd, t_task_sub *sub)
 		LOG(glogfd, LOG_ERROR, "dir %s create %m!\n", task->tmpfile);
 		return LOCALFILE_DIR_E;
 	}
-	*fd = open(task->tmpfile, O_CREAT | O_WRONLY| O_LARGEFILE |O_TRUNC, 0644);
+	*fd = open(task->tmpfile, O_CREAT | O_WRONLY| O_LARGEFILE |O_APPEND, 0644);
 	if (*fd < 0)
 	{
 		LOG(glogfd, LOG_ERROR, "open %s err %m\n", task->tmpfile);
