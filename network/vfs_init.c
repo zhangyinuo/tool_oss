@@ -121,9 +121,27 @@ void reload_config()
 	LOG(glogfd, LOG_NORMAL, "task_timeout = %ld\n", g_config.task_timeout);
 }
 
+static int check_storage_dir()
+{
+	char *p = myconfig_get_value("vfs_src_datadir");
+	if (!p)
+	{
+		LOG(glogfd, LOG_ERROR, "ERR %s:%d no vfs_src_datadir\n", FUNC, LN);
+		return -1;
+	}
+	g_config.src_root_len = strlen(p);
+
+	p = myconfig_get_value("vfs_dst_datadir");
+	if (!p)
+	{
+		LOG(glogfd, LOG_ERROR, "ERR %s:%d no vfs_dst_datadir\n", FUNC, LN);
+		return -1;
+	}
+	return 0;
+}
+
 int init_global()
 {
-	self_stat = UNKOWN_STAT;
 	g_config.sig_port = myconfig_get_intval("sig_port", 39090);
 	g_config.data_port = myconfig_get_intval("data_port", 49090);
 	g_config.timeout = myconfig_get_intval("timeout", 300);
@@ -134,6 +152,9 @@ int init_global()
 	init_buff_size = myconfig_get_intval("socket_buff", 65536);
 	if (init_buff_size < 20480)
 		init_buff_size = 20480;
+
+	if (check_storage_dir())
+		return -1;
 
 	g_config.retry = myconfig_get_intval("vfs_retry", 0) + 1;
 

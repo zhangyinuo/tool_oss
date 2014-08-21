@@ -70,6 +70,7 @@ typedef struct {
 typedef struct {
 	int task_splic_count;
 	off_t splic_min_size;
+	int src_root_len;
 	time_t task_timeout;
 	time_t real_rm_time;
 	uint64_t mindiskfree;

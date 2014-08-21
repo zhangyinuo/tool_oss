@@ -51,10 +51,10 @@ static int createdir(char *file)
 	return 0;
 }
 
-static int get_localdir(t_task_base *task, char *outdir)
+int get_localdir(char *srcfile, char *dstfile)
 {
-	char *datadir = "/diska";
-	sprintf(outdir, "%s/", datadir);
+	char *p = srcfile + g_config.src_root_len;
+	sprintf(dstfile, "%s/%s", myconfig_get_value("vfs_dst_datadir"), p);
 	return 0;
 }
 
@@ -69,79 +69,31 @@ void real_rm_file(char *file)
 	LOG(glogfd, LOG_NORMAL, "file [%s] be unlink\n", file);
 }
 
-int delete_localfile(t_task_base *task)
+int delete_localfile(char *srcfile)
 {
-	char outdir[256] = {0x0};
-	if (get_localdir(task, outdir))
-		return LOCALFILE_DIR_E;
-	char *t = strrchr(task->filename, '/');
-	if (t == NULL)
-		return LOCALFILE_DIR_E;
-	t++;
-	strcat(outdir, t);
-	char rmfile[256] = {0x0};
-	snprintf(rmfile, sizeof(rmfile), "%s.tmp4rm", outdir);
-	if (rename(outdir, rmfile))
-	{
-		LOG(glogfd, LOG_ERROR, "file [%s] rename [%s]err %m\n", outdir, rmfile);
-		return LOCALFILE_RENAME_E;
-	}
-	t_vfs_timer vfs_timer;
-	memset(&vfs_timer, 0, sizeof(vfs_timer));
-	snprintf(vfs_timer.args, sizeof(vfs_timer.args), "%s", rmfile);
-	vfs_timer.span_time = g_config.real_rm_time;
-	vfs_timer.cb = real_rm_file;
-	if (add_to_delay_task(&vfs_timer))
-		LOG(glogfd, LOG_ERROR, "file [%s] rename [%s]add delay task err %m\n", outdir, rmfile);
+	char outfile[256] = {0x0};
+	get_localdir(srcfile, outfile);
+	if (unlink(outfile))
+		LOG(glogfd, LOG_ERROR, "file unlink err[%s:%m]\n", outfile);
+
 	return LOCALFILE_OK;
 }
 
-int check_localfile_md5(t_task_base *task, int type)
+int check_localfile_md5(char *srcfile, char *md5sum)
 {
-	char outdir[256] = {0x0};
-	if (get_localdir(task, outdir))
-		return LOCALFILE_DIR_E;
-	char *t = strrchr(task->filename, '/');
-	if (t == NULL)
-		return LOCALFILE_DIR_E;
-	t++;
-	if (type == VIDEOFILE)
-		strcat(outdir, t);
-	if (type == VIDEOTMP)  /*tmpfile = "." + file + ".vfs"; */
-	{
-		memset(outdir, 0, sizeof(outdir));
-		snprintf(outdir, sizeof(outdir), "%s", task->tmpfile);
-		LOG(glogfd, LOG_DEBUG, "file [%s:%s]\n", outdir, task->tmpfile);
-	}
-	struct utimbuf c_time;
-	c_time.modtime = c_time.actime;
-	utime(outdir, &c_time);
-	chmod(outdir, 0644);
-	return LOCALFILE_OK;
-}
+	char outfile[256] = {0x0};
+	get_localdir(srcfile, outfile);
+	char filemd5[36] = {0x0};
+	getfilemd5view((const char*)outfile, (unsigned char *)filemd5);
 
-int open_localfile_4_read(t_task_base *task, int *fd)
-{
-	char outdir[256] = {0x0};
-	if (get_localdir(task, outdir))
-		return LOCALFILE_DIR_E;
-	char *t = strrchr(task->filename, '/');
-	if (t == NULL)
-		return LOCALFILE_DIR_E;
-	t++;
-	strcat(outdir, t);
-	*fd = open(outdir, O_RDONLY);
-	if (*fd < 0)
-	{
-		LOG(glogfd, LOG_ERROR, "open %s err %m\n", outdir);
-		return LOCALFILE_OPEN_E;
-	}
-	return LOCALFILE_OK;
+	return strncmp(md5sum, filemd5, 32);
 }
 
 int open_tmp_localfile_4_write(t_task_base *task, int *fd, t_task_sub *sub)
 {
-	snprintf(task->tmpfile, sizeof(task->tmpfile), "%s_%ld_%ld", task->filename, sub->start, sub->end);
+	char outfile[256] = {0x0};
+	get_localdir(task->filename, outfile);
+	snprintf(task->tmpfile, sizeof(task->tmpfile), "%s_%ld_%ld", outfile, sub->start, sub->end);
 	if (createdir(task->tmpfile))
 	{
 		LOG(glogfd, LOG_ERROR, "dir %s create %m!\n", task->tmpfile);
@@ -165,39 +117,6 @@ int close_tmp_check_mv(t_task_base *task, int fd)
 	}
 	close(fd);
 	return LOCALFILE_OK;
-}
-
-int check_disk_space(t_task_base *base)
-{
-	char path[256] = {0x0};
-	if (get_localdir(base, path))
-	{
-		LOG(glogfd, LOG_ERROR, "get local dir err %s\n", base->filename);
-		return LOCALFILE_DIR_E;
-	}
-	if (access(path, F_OK) != 0)
-	{
-		LOG(glogfd, LOG_DEBUG, "dir %s not exist, try create !\n", path);
-		if (createdir(path))
-		{
-			LOG(glogfd, LOG_ERROR, "dir %s create %m!\n", path);
-			return LOCALFILE_DIR_E;
-		}
-	}
-	struct statfs sfs;
-	if (statfs(path, &sfs))
-	{
-		LOG(glogfd, LOG_ERROR, "statfs %s err %m\n", path);
-		return DISK_ERR;
-	}
-
-	uint64_t diskfree = sfs.f_bfree * sfs.f_bsize;
-	if (g_config.mindiskfree > diskfree)
-	{
-		LOG(glogfd, LOG_ERROR, "statfs %s space not enough %llu:%llu\n", path, diskfree, g_config.mindiskfree);
-		return DISK_SPACE_TOO_SMALL;
-	}
-	return DISK_OK;
 }
 
 void localfile_link_task(t_task_base *task)

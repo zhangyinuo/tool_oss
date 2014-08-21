@@ -85,7 +85,7 @@ static void do_sync_dir(char *indir)
 static void sync_dir_thread(void *arg)
 {
 	pthread_detach(pthread_self());
-	char *flvdir = myconfig_get_value("vfs_fcs_datadir");
+	char *flvdir = myconfig_get_value("vfs_src_datadir");
 	if(!flvdir)
 		flvdir = "/flvdata";
 

@@ -160,7 +160,7 @@ static void start_inotify_thread(void * arg)
 		return ;
 	}
 
-	char *flvdir = myconfig_get_value("vfs_fcs_datadir");
+	char *flvdir = myconfig_get_value("vfs_src_datadir");
 	if(!flvdir)
 	{
 		flvdir = "/flvdata";

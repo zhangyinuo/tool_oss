@@ -55,10 +55,12 @@ static void create_header(char *httpheader, char *filename, char *filemd5, int t
 
 static int do_merge_file(char *srcip, char *filename, int count, char *filemd5)
 {
-	int ofd = open(filename, O_CREAT | O_WRONLY| O_LARGEFILE |O_TRUNC, 0644);
+	char outfile[256] = {0x0};
+	get_localdir(filename, outfile);
+	int ofd = open(outfile, O_CREAT | O_WRONLY| O_LARGEFILE |O_TRUNC, 0644);
 	if (ofd < 0)
 	{
-		LOG(vfs_http_log, LOG_ERROR, "open %s err %m\n", filename);
+		LOG(vfs_http_log, LOG_ERROR, "open %s for %s err %m\n", outfile, filename);
 		return-1;
 	}
 	t_vfs_tasklist *task = NULL;

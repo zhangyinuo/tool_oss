@@ -146,10 +146,7 @@ int do_voss_sync_file(char *domain, char *file, char *sip, char *fmd5)
 
 int do_voss_del_file(char *domain, char *file)
 {
-	t_task_base base;
-	memset(&base, 0, sizeof(base));
-	snprintf(base.filename, sizeof(base.filename), "%s", file);
-	return delete_localfile(&base);
+	return 0;
 }
 
 int do_voss_sync_dir(char *domain, char *file, time_t starttime)

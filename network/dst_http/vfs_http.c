@@ -21,6 +21,7 @@
 #include "global.h"
 #include "vfs_init.h"
 #include "vfs_task.h"
+#include "vfs_localfile.h"
 #include "common.h"
 
 typedef struct {
@@ -127,12 +128,9 @@ static int do_req(t_uc_oss_http_header *header)
 	if (header->type == 1)
 	{
 		LOG(vfs_http_log, LOG_NORMAL, "unlink %s:%s\n", header->srcip, header->filename);
-		unlink(header->filename);
-		return 0;
+		return delete_localfile(header->filename);
 	}
-	char md5view[36] = {0x0};
-	getfilemd5view((const char *)header->filename, (unsigned char* )md5view);
-	if (strcmp(md5view, header->filemd5) == 0)
+	if (check_localfile_md5(header->filename, header->filemd5) == 0)
 	{
 		LOG(vfs_http_log, LOG_NORMAL, "file %s:%s md5 ok\n", header->srcip, header->filename);
 		char httpheader[1024] = {0x0};
