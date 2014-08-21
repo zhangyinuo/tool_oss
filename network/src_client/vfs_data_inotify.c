@@ -17,7 +17,7 @@
 char watch_dirs[MAX_WATCH][256];
 int inotify_fd = -1;
 fd_set fds;
-uint32_t mask = IN_CLOSE_WRITE|IN_DELETE|IN_MOVED_FROM|IN_MOVED_TO;
+uint32_t mask = IN_CLOSE_WRITE|IN_DELETE|IN_MOVED_FROM|IN_MOVED_TO|IN_CREATE;
 
 static int add_watch(int fd, char *indir, unsigned int mask)
 {
@@ -87,6 +87,24 @@ static void inotify_event_handler(struct inotify_event *event)
 	strcpy(path, watch_dirs[wd]);
 	strcat(path, "/");
 	strcat(path, filename);
+	if (event->mask & IN_CREATE)
+	{
+		struct stat filestat;
+		if (stat(path, &filestat))
+		{
+			LOG(vfs_sig_log, LOG_ERROR, "get file stat %s err %m\n", path);
+			return;
+		}
+
+		if (S_ISDIR(filestat.st_mode))
+		{
+			LOG(vfs_sig_log, LOG_NORMAL, "new dir %s\n", path);
+			add_watch(inotify_fd, path, mask);
+		}
+		else
+			LOG(vfs_sig_log, LOG_NORMAL, "file %s be create, ignore it\n", path);
+		return;
+	}
 
     t_task_base task;
 	memset(&task, 0, sizeof(task));
