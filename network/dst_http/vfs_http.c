@@ -136,9 +136,9 @@ static int do_req(t_uc_oss_http_header *header)
 		char httpheader[1024] = {0x0};
 		create_header(httpheader, header->filename, header->filemd5, 5);
 
-		int fd = active_connect(header->srcip, 80);
+		int fd = active_connect(header->srcip, g_config.sig_port);
 		if (fd < 0)
-			LOG(vfs_http_log, LOG_ERROR, "active_connect %s:80 err %m\n", header->srcip);
+			LOG(vfs_http_log, LOG_ERROR, "active_connect %s:%d err %m\n", header->srcip, g_config.sig_port);
 		else
 			active_send(fd, httpheader);
 		return 0;
@@ -242,7 +242,10 @@ static int check_request(int fd, char* data, int len)
 	if(!strncmp(data, "GET /", 5)) {
 		char* p;
 		if((p = strstr(data + 5, "\r\n\r\n")) != NULL) {
+			char tmp = *(p + 4);
+			*(p + 4) = 0x0;
 			LOG(vfs_http_log, LOG_DEBUG, "fd[%d] data[%s]!\n", fd, data);
+			*(p + 4) = tmp;
 			char* q;
 			int len;
 			if((q = strstr(data + 5, " HTTP/")) != NULL) {

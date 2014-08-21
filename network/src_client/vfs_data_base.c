@@ -42,20 +42,20 @@ static int active_connect()
 	return fd;
 }
 
-static void create_header(char *httpheader, char *filename, char *filemd5, int type, size_t datalen)
+static void create_header(char *httpheader, t_task_base *base)
 {
 	strcat(httpheader, "GET /us_oss HTTP/1.1\r\n");
 
 	strcat(httpheader, "filename: ");
-	strcat(httpheader, filename);
+	strcat(httpheader, base->filename);
 	strcat(httpheader, "\r\n");
 
 	char sbuf[64] = {0x0};
-	snprintf(sbuf, sizeof(sbuf), "type: %d\r\n", type);
+	snprintf(sbuf, sizeof(sbuf), "type: %d\r\n", base->type);
 	strcat(httpheader, sbuf);
 
 	memset(sbuf, 0, sizeof(sbuf));
-	snprintf(sbuf, sizeof(sbuf), "datalen: %ld\r\n", datalen);
+	snprintf(sbuf, sizeof(sbuf), "datalen: %ld\r\n", base->fsize);
 	strcat(httpheader, sbuf);
 
 	memset(sbuf, 0, sizeof(sbuf));
@@ -63,19 +63,23 @@ static void create_header(char *httpheader, char *filename, char *filemd5, int t
 	strcat(httpheader, sbuf);
 
 	memset(sbuf, 0, sizeof(sbuf));
-	snprintf(sbuf, sizeof(sbuf), "end: %ld\r\n", datalen - 1);
+	snprintf(sbuf, sizeof(sbuf), "end: %ld\r\n", base->fsize - 1);
 	strcat(httpheader, sbuf);
 
 	memset(sbuf, 0, sizeof(sbuf));
-	snprintf(sbuf, sizeof(sbuf), "filemd5: %s\r\n\r\n", filemd5);
+	snprintf(sbuf, sizeof(sbuf), "filemd5: %s\r\n", base->filemd5);
+	strcat(httpheader, sbuf);
+
+	memset(sbuf, 0, sizeof(sbuf));
+	snprintf(sbuf, sizeof(sbuf), "filectime: %ld\r\n\r\n", base->file_ctime);
 	strcat(httpheader, sbuf);
 }
 
-static int inotify_new_task(char *filename, char *filemd5, int type, size_t datalen)
+static int inotify_new_task(t_task_base *base)
 {
 	char httpheader[1024] = {0x0};
 
-	create_header(httpheader, filename, filemd5, type, datalen);
+	create_header(httpheader, base);
 
 	int fd = active_connect();
 	if (fd < 0)
@@ -113,7 +117,7 @@ void check_task()
 			return ;
 
 		t_task_base *base = &(task->task.base);
-		if (inotify_new_task(base->filename, base->filemd5, base->type, base->fsize))
+		if (inotify_new_task(base))
 			vfs_set_task(task, TASK_WAIT_TMP);
 		else
 			vfs_set_task(task, TASK_HOME);
