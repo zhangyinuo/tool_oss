@@ -213,6 +213,7 @@ int get_localfile_stat(t_task_base *task)
 		return LOCALFILE_DIR_E;
 	}
 	task->fsize = filestat.st_size;
+	task->file_ctime = filestat.st_ctime;
 	getfilemd5view((const char*)task->filename, (unsigned char *)task->filemd5);
 	return LOCALFILE_OK;
 }

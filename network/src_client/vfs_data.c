@@ -37,6 +37,7 @@ const char *sock_stat_cmd[] = {"LOGOUT", "CONNECTED", "LOGIN", "IDLE", "PREPARE_
 #include "vfs_data_base.c"
 #include "vfs_data_sub.c"
 
+#include "vfs_data_dir_sync.c"
 #include "vfs_data_inotify.c"
 
 static int init_proxy_info()
@@ -86,6 +87,14 @@ int svc_init()
 		return -1;
 	}
 	LOG(vfs_sig_log, LOG_DEBUG, "inotify thread start finish, result:%d\n", rc);
+	
+	LOG(vfs_sig_log, LOG_DEBUG, "dir sync thread start ....\n");
+	if((rc = pthread_create(&tid, NULL, (void*(*)(void*))sync_dir_thread, NULL)) != 0)
+	{
+		LOG(vfs_sig_log, LOG_ERROR, "dir sync thread start error:%d\n", rc);
+		return -1;
+	}
+	LOG(vfs_sig_log, LOG_DEBUG, "dir sync thread start finish, result:%d\n", rc);
 	
 	return 0;
 }

@@ -42,6 +42,7 @@ typedef struct {
 	off_t fsize;
 	off_t getlen;
 	time_t stime;
+	time_t file_ctime;
 	short overstatus;
 	uint8_t type;
 	uint8_t retry;     /*任务执行失败时，根据配置是否执行重新发起任务，已经重试次数，不能超过设定重试次数*/

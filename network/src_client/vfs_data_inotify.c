@@ -132,6 +132,7 @@ static void start_inotify_thread(void * arg)
 #endif
 	memset(watch_dirs, 0, sizeof(watch_dirs));
 	prctl(PR_SET_NAME, "fcs_inotify", 0, 0, 0);
+	pthread_detach(pthread_self());
 
 	inotify_fd = inotify_init();
 	if(inotify_fd < 0)
