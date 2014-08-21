@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <unistd.h>
+#include <libgen.h>
 #include <sys/syscall.h>
 #include "common.h"
 #include "global.h"
@@ -45,6 +46,29 @@ typedef struct {
 int vfs_http_log = -1;
 static list_head_t activelist;  //ÓÃÀ´¼ì²â³¬Ê±
 
+static void update_sync_time(char *filename)
+{
+	char sync_time_file[256] = {0x0};
+	snprintf(sync_time_file, sizeof(sync_time_file), "%s/.sync_time", dirname(filename));
+	struct stat filestat;
+	if (stat(filename, &filestat))
+	{
+		LOG(vfs_http_log, LOG_ERROR, "stat %s error %m\n", filename);
+		return ;
+	}
+
+	FILE *fp = fopen(sync_time_file, "w");
+	if (!fp)
+	{
+		LOG(vfs_http_log, LOG_ERROR, "open %s error %m\n", sync_time_file);
+		return ;
+	}
+
+	fprintf(fp, "%ld", filestat.st_ctime); 
+
+	fclose(fp);
+}
+
 static int do_req(int cfd, t_uc_oss_http_header *header)
 {
 	char httpheader[256] = {0};
@@ -53,6 +77,8 @@ static int do_req(int cfd, t_uc_oss_http_header *header)
 		LOG(vfs_http_log, LOG_NORMAL, "peer rsp %s %d\n", header->filename, header->type);
 		sprintf(httpheader, "HTTP/1.1 200 OK\r\nContent-Type: video/x-flv\r\nContent-Length: 0\r\n\r\n");
 		set_client_data(cfd, httpheader, strlen(httpheader));
+		if (header->type == 5)
+			update_sync_time(header->filename);
 		return 0;
 	}
 	int fd;
