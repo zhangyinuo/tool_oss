@@ -116,10 +116,10 @@ static int do_merge_file(char *srcip, char *filename, int count, char *filemd5)
 
 	int type = 5;
 	char md5view[36] = {0x0};
-	getfilemd5view((const char *)filename, (unsigned char* )md5view);
+	getfilemd5view((const char *)outfile, (unsigned char* )md5view);
 	if (strcmp(md5view, filemd5))
 	{
-		LOG(vfs_http_log, LOG_ERROR, "%s md5 [%s:%s]\n", filename, filemd5, md5view);
+		LOG(vfs_http_log, LOG_ERROR, "%s md5 [%s:%s]\n", outfile, filemd5, md5view);
 		type = 6;
 	}
 	char httpheader[1024] = {0x0};
