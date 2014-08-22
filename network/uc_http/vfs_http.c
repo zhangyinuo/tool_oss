@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <unistd.h>
+#include <libgen.h>
 #include <sys/syscall.h>
 #include "common.h"
 #include "global.h"
@@ -21,7 +22,6 @@
 #include "global.h"
 #include "vfs_init.h"
 #include "vfs_task.h"
-#include "vfs_localfile.h"
 #include "common.h"
 
 typedef struct {
@@ -68,6 +68,65 @@ static int insert_sub_task(t_uc_oss_http_header *header, int idx, int count, off
 	return 0;
 }
 
+static void update_sync_time(char *filename)
+{
+	struct stat filestat;
+	if (stat(filename, &filestat))
+	{
+		LOG(vfs_http_log, LOG_ERROR, "stat %s error %m\n", filename);
+		return ;
+	}
+
+	char sync_time_file[256] = {0x0};
+	snprintf(sync_time_file, sizeof(sync_time_file), "%s/.sync_time", dirname(filename));
+
+	FILE *fp = fopen(sync_time_file, "w");
+	if (!fp)
+	{
+		LOG(vfs_http_log, LOG_ERROR, "open %s error %m\n", sync_time_file);
+		return ;
+	}
+
+	fprintf(fp, "%ld", filestat.st_ctime); 
+
+	fclose(fp);
+}
+
+static int do_req(int cfd, t_uc_oss_http_header *header)
+{
+	char httpheader[256] = {0};
+	if (header->type >= 5)
+	{
+		LOG(vfs_http_log, LOG_NORMAL, "peer rsp %s %d\n", header->filename, header->type);
+		sprintf(httpheader, "HTTP/1.1 200 OK\r\nContent-Type: video/x-flv\r\nContent-Length: 0\r\n\r\n");
+		set_client_data(cfd, httpheader, strlen(httpheader));
+		if (header->type == 5)
+			update_sync_time(header->filename);
+		return 0;
+	}
+
+	if ( header->datalen == 0)
+		return 0;
+
+	int splic_count = header->datalen / g_config.splic_min_size;
+
+	int idx = 1;
+	off_t start = 0;
+	off_t end = 0;
+	for(; idx <= splic_count; idx++)
+	{
+		if (idx == splic_count)
+			end = header->datalen - 1;
+		else
+			end = start + g_config.splic_min_size - 1;
+
+		if (insert_sub_task(header, idx, splic_count, start, end))
+			return -1;
+		start += g_config.splic_min_size;
+	}
+	return 0;
+}
+
 int svc_init() 
 {
 	char *logname = myconfig_get_value("log_server_logname");
@@ -111,51 +170,7 @@ int svc_initconn(int fd)
 	return 0;
 }
 
-#include "vfs_http_sub.c"
-
-static int do_req(t_uc_oss_http_header *header)
-{
-	if (header->type == 1)
-	{
-		LOG(vfs_http_log, LOG_NORMAL, "unlink %s:%s\n", header->srcip, header->filename);
-		return delete_localfile(header->filename);
-	}
-	if (check_localfile_md5(header->filename, header->filemd5) == 0)
-	{
-		LOG(vfs_http_log, LOG_NORMAL, "file %s:%s md5 ok\n", header->srcip, header->filename);
-		char httpheader[1024] = {0x0};
-		create_header(httpheader, header->filename, header->filemd5, 5);
-
-		int fd = active_connect(header->srcip, g_config.sig_port);
-		if (fd < 0)
-			LOG(vfs_http_log, LOG_ERROR, "active_connect %s:%d err %m\n", header->srcip, g_config.sig_port);
-		else
-			active_send(fd, httpheader);
-		return 0;
-	}
-	if ( header->datalen == 0)
-		return 0;
-
-	int splic_count = header->datalen / g_config.splic_min_size;
-	if (header->datalen % g_config.splic_min_size)
-		splic_count++;
-
-	int idx = 1;
-	off_t start = 0;
-	off_t end = 0;
-	for(; idx <= splic_count; idx++)
-	{
-		if (idx == splic_count)
-			end = header->datalen - 1;
-		else
-			end = start + g_config.splic_min_size - 1;
-
-		if (insert_sub_task(header, idx, splic_count, start, end))
-			return -1;
-		start += g_config.splic_min_size;
-	}
-	return 0;
-}
+#include "vfs_http_base.c"
 
 static char * parse_item(char *src, char *item, char **end)
 {
@@ -232,10 +247,7 @@ static int check_request(int fd, char* data, int len)
 	if(!strncmp(data, "GET /", 5)) {
 		char* p;
 		if((p = strstr(data + 5, "\r\n\r\n")) != NULL) {
-			char tmp = *(p + 4);
-			*(p + 4) = 0x0;
 			LOG(vfs_http_log, LOG_DEBUG, "fd[%d] data[%s]!\n", fd, data);
-			*(p + 4) = tmp;
 			char* q;
 			int len;
 			if((q = strstr(data + 5, " HTTP/")) != NULL) {
@@ -243,7 +255,7 @@ static int check_request(int fd, char* data, int len)
 				if(len < 1023) {
 					if (parse_header(&(peer->header), data, p - data))
 						return -1;
-					do_req(&(peer->header));
+					do_req(fd, &(peer->header));
 					return p - data + 4;
 				}
 			}
@@ -254,14 +266,6 @@ static int check_request(int fd, char* data, int len)
 	}
 	else
 		return -1;
-}
-
-static int handle_request(int cfd) 
-{
-	char httpheader[256] = {0};
-	int len = sprintf(httpheader, "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n");
-	set_client_data(cfd, httpheader, len);
-	return 0;
 }
 
 static int check_req(int fd)
@@ -284,7 +288,6 @@ static int check_req(int fd)
 		LOG(vfs_http_log, LOG_DEBUG, "fd[%d] data not suffic!\n", fd);
 		return RECV_ADD_EPOLLIN;
 	}
-	handle_request(fd);
 	consume_client_data(fd, clen);
 	return RECV_SEND;
 }
@@ -314,8 +317,7 @@ void svc_timeout()
 		if (now - peer->hbtime > g_config.timeout)
 			do_close(peer->fd);
 	}
-
-	check_fin_task();
+	check_task();
 }
 
 void svc_finiconn(int fd)

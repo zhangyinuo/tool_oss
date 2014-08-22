@@ -29,6 +29,19 @@
 #define vfs_max(val1, val2)  (((val1) < (val2)) ? (val2) : (val1))
 #define vfs_min(val1, val2)  (((val1) > (val2)) ? (val2) : (val1))
 
+enum {GET = 0, PUT};
+typedef struct {
+	uint8_t  action_type;
+	uint8_t  type;
+	char 	 filename[255];
+	char     filemd5[36];
+	char	 srcip[16];
+	uint32_t retcode;
+	uint64_t datalen;
+	off_t    start;
+	off_t    end;
+} t_uc_oss_http_header;
+
 typedef struct {
 	char indir[256];
 	char bkdir[256];
