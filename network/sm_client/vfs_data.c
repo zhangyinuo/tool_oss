@@ -284,7 +284,6 @@ int svc_recv(int fd)
 	char val[256] = {0x0};
 	struct conn *curcon = &acon[fd];
 	vfs_cs_peer *peer = (vfs_cs_peer *) curcon->user;
-	t_vfs_tasklist *task0 = peer->recvtask;
 recvfileing:
 	peer->hbtime = time(NULL);
 	list_move_tail(&(peer->alist), &activelist);
@@ -292,6 +291,7 @@ recvfileing:
 	if (peer->sock_stat == RECV_BODY_ING)
 	{
 		LOG(vfs_sig_log, LOG_TRACE, "%s:%s:%d\n", ID, FUNC, LN);
+		t_vfs_tasklist *task0 = peer->recvtask;
 		char *data;
 		size_t datalen;
 		if(task0 == NULL)
@@ -354,7 +354,6 @@ recvfileing:
 		if (subret == RECV_CLOSE)
 		{
 			peer->recvtask = NULL;
-			vfs_set_task(task0, TASK_FIN);
 			return RECV_CLOSE;
 		}
 		if (peer->sock_stat == RECV_BODY_ING)
