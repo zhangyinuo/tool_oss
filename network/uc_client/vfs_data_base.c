@@ -13,10 +13,11 @@
 volatile extern int maintain ;		//1-维护配置 0 -可以使用
 extern t_vfs_up_proxy g_proxy;
 
-static int active_send(int fd, char *data)
+static int active_send(int fd, char *data, t_task_sub *sub, int lfd)
 {
 	LOG(vfs_sig_log, LOG_DEBUG, "send %d cmdid %s\n", fd, data);
 	set_client_data(fd, data, strlen(data));
+	set_client_fd(fd, lfd, sub->start, sub->end - sub->start + 1);
 	modify_fd_event(fd, EPOLLOUT);
 	return 0;
 }
@@ -42,7 +43,7 @@ static int active_connect()
 	return fd;
 }
 
-static void create_header(char *httpheader, t_task_base *base)
+static void create_header(char *httpheader, t_task_base *base, t_task_sub *sub)
 {
 	strcat(httpheader, "GET /us_oss HTTP/1.1\r\n");
 
@@ -71,15 +72,30 @@ static void create_header(char *httpheader, t_task_base *base)
 	strcat(httpheader, sbuf);
 
 	memset(sbuf, 0, sizeof(sbuf));
-	snprintf(sbuf, sizeof(sbuf), "filectime: %ld\r\n\r\n", base->file_ctime);
+	snprintf(sbuf, sizeof(sbuf), "filectime: %ld\r\n", base->file_ctime);
+	strcat(httpheader, sbuf);
+
+	memset(sbuf, 0, sizeof(sbuf));
+	snprintf(sbuf, sizeof(sbuf), "idx: %d\r\n", sub->idx);
+	strcat(httpheader, sbuf);
+
+	memset(sbuf, 0, sizeof(sbuf));
+	snprintf(sbuf, sizeof(sbuf), "count: %d\r\n\r\n", sub->count);
 	strcat(httpheader, sbuf);
 }
 
-static int inotify_new_task(t_task_base *base)
+static int inotify_new_task(t_task_base *base, t_task_sub *sub)
 {
 	char httpheader[1024] = {0x0};
 
-	create_header(httpheader, base);
+	create_header(httpheader, base, sub);
+
+	int lfd = open(base->filename, O_RDONLY|O_LARGEFILE);
+	if (lfd < 0)
+	{
+		LOG(vfs_sig_log, LOG_ERROR, "open %s err %m\n", base->filename);
+		return -1;
+	}
 
 	int fd = active_connect();
 	if (fd < 0)
@@ -88,7 +104,7 @@ static int inotify_new_task(t_task_base *base)
 		return -1;
 	}
 
-	return active_send(fd, httpheader);
+	return active_send(fd, httpheader, sub, lfd);
 }
 
 void check_task()
@@ -103,7 +119,7 @@ void check_task()
 			LOG(vfs_sig_log, LOG_TRACE, "vfs_get_task get notihng %d\n", ret);
 			break;
 		}
-		vfs_set_task(task, TASK_WAIT);
+		vfs_set_task(task, TASK_WAIT_SYNC);
 	}
 
 	uint16_t once_run = 0;
@@ -112,12 +128,13 @@ void check_task()
 		once_run++;
 		if (once_run >= g_config.cs_max_task_run_once)
 			return;
-		ret = vfs_get_task(&task, TASK_WAIT);
+		ret = vfs_get_task(&task, TASK_WAIT_SYNC);
 		if (ret != GET_TASK_OK)
 			return ;
 
 		t_task_base *base = &(task->task.base);
-		if (inotify_new_task(base))
+		t_task_sub *sub = &(task->task.sub);
+		if (inotify_new_task(base, sub))
 			vfs_set_task(task, TASK_WAIT_TMP);
 		else
 			vfs_set_task(task, TASK_HOME);

@@ -125,7 +125,10 @@ static void inotify_event_handler(struct inotify_event *event)
 		LOG(vfs_sig_log, LOG_DEBUG, "inotify file delete or move away %s\n", path);
 		task.type = TASK_DELFILE;
 	}
- 	   
+
+	split_task(&task);
+ 
+	/*
 	t_vfs_tasklist *vfs_task;
 	int ret = vfs_get_task(&vfs_task, TASK_HOME);
 	if(ret != GET_TASK_OK) 
@@ -136,9 +139,9 @@ static void inotify_event_handler(struct inotify_event *event)
 	memset(&(vfs_task->task), 0, sizeof(t_vfs_taskinfo));
 	memcpy(&(vfs_task->task.base), &task, sizeof(task));
 	vfs_set_task(vfs_task, TASK_WAIT);	
+	*/
 	
 	LOG(vfs_sig_log, LOG_DEBUG, "inotify add task to task_wait filepath %s, task type %d\n", task.filename, task.type);
-	
 	return;
 }   
 

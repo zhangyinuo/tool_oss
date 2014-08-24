@@ -65,6 +65,8 @@ static void do_sync_dir(char *indir)
 		}
 		task.type = TASK_ADDFILE;
 
+		split_task(&task);
+		/*
 		t_vfs_tasklist *vfs_task;
 		int ret = vfs_get_task(&vfs_task, TASK_HOME);
 		if(ret != GET_TASK_OK) 
@@ -75,6 +77,7 @@ static void do_sync_dir(char *indir)
 		memset(&(vfs_task->task), 0, sizeof(t_vfs_taskinfo));
 		memcpy(&(vfs_task->task.base), &task, sizeof(task));
 		vfs_set_task(vfs_task, TASK_WAIT);	
+		*/
 
 		LOG(vfs_sig_log, LOG_DEBUG, "sync_dir task to task_wait filepath %s, task type %d\n", task.filename, task.type);
 	}

@@ -97,17 +97,6 @@ static void check_task()
 {
 	t_vfs_tasklist *task = NULL;
 	int ret = 0;
-	while (1)
-	{
-		ret = vfs_get_task(&task, TASK_WAIT_TMP);
-		if (ret != GET_TASK_OK)
-		{
-			LOG(vfs_http_log, LOG_TRACE, "vfs_get_task get notihng %d\n", ret);
-			break;
-		}
-		vfs_set_task(task, TASK_WAIT);
-	}
-
 	uint16_t once_run = 0;
 	while (1)
 	{
@@ -117,12 +106,6 @@ static void check_task()
 		ret = vfs_get_task(&task, TASK_WAIT);
 		if (ret != GET_TASK_OK)
 			return ;
-
-		t_task_base *base = &(task->task.base);
-		if (inotify_new_task(base))
-			vfs_set_task(task, TASK_WAIT_TMP);
-		else
-			vfs_set_task(task, TASK_HOME);
 	}
 }
 
