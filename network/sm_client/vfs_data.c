@@ -109,6 +109,19 @@ int svc_initconn(int fd)
 	return 0;
 }
 
+static void convert_httpheader_2_task(t_uc_oss_http_header *header, t_task_base *base, t_task_sub *sub)
+{
+	base->type = header->type;
+	snprintf(base->filemd5, sizeof(base->filemd5), "%s", header->filemd5);
+	snprintf(base->filename, sizeof(base->filename), "%s", header->filename);
+
+	sub->idx = header->idx;
+	sub->count = header->count;
+
+	sub->start = header->start;
+	sub->end= header->end;
+}
+
 static char * parse_item(char *src, char *item, char **end)
 {
 	char *p = strstr(src, item);
@@ -170,6 +183,18 @@ static int parse_header(t_uc_oss_http_header *peer, char *data)
 	if (pret == NULL)
 		return -1;
 	snprintf(peer->filemd5, sizeof(peer->filemd5), "%s", pret);
+	data = end;
+
+	pret = parse_item(data, "idx: ", &end);
+	if (pret == NULL)
+		return -1;
+	peer->idx = atol(pret);
+	data = end;
+
+	pret = parse_item(data, "count: ", &end);
+	if (pret == NULL)
+		return -1;
+	peer->count = atol(pret);
 
 	return 0;
 }
@@ -243,8 +268,8 @@ static int check_req(int fd)
 	memset(base, 0, sizeof(t_task_base));
 	memset(sub, 0, sizeof(t_task_sub));
 
-	peer->recvtask = task;
 	convert_httpheader_2_task(header, base, sub);
+	peer->recvtask = task;
 
 	int clen = end - data;
 	ret = do_req(fd, header->datalen);

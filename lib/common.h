@@ -40,7 +40,7 @@ typedef struct {
 	uint64_t datalen;
 	off_t    start;
 	off_t    end;
-	int		 index;
+	int		 idx;
 	int 	 count;
 } t_uc_oss_http_header;
 

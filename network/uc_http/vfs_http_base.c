@@ -95,6 +95,7 @@ static int inotify_new_task(t_task_base *base)
 
 static void check_task()
 {
+	return ;
 	t_vfs_tasklist *task = NULL;
 	int ret = 0;
 	uint16_t once_run = 0;
