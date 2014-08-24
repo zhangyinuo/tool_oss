@@ -24,7 +24,7 @@ static int active_send(int fd, char *data, t_task_sub *sub, int lfd)
 
 static int active_connect()
 {
-	char *ip = myconfig_get_value("iplist_serverip");
+	char *ip = myconfig_get_value("iplist_smip");
 	int port = g_config.sig_port;
 	int fd = createsocket(ip, port);
 	if (fd < 0)
@@ -136,6 +136,7 @@ void check_task()
 		if (ret != GET_TASK_OK)
 			return ;
 
+		LOG(vfs_sig_log, LOG_DEBUG, "%s %s %d\n", ID, FUNC, LN);
 		t_task_base *base = &(task->task.base);
 		t_task_sub *sub = &(task->task.sub);
 		if (inotify_new_task(base, sub))

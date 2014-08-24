@@ -21,7 +21,7 @@ static int active_send(int fd, char *data)
 
 static int active_connect()
 {
-	char *ip = myconfig_get_value("iplist_serverip");
+	char *ip = myconfig_get_value("iplist_smip");
 	int port = g_config.sig_port;
 	int fd = createsocket(ip, port);
 	if (fd < 0)
