@@ -40,6 +40,8 @@ static int split_task(t_task_base *base)
 		return 0;
 
 	int splic_count = base->fsize / g_config.splic_min_size;
+	if (splic_count == 0)
+		splic_count = 1;
 
 	int idx = 1;
 	off_t start = 0;
