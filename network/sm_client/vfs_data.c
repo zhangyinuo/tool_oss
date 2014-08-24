@@ -216,6 +216,7 @@ static int check_req(int fd)
 
 	struct conn *curcon = &acon[fd];
 	vfs_cs_peer *peer = (vfs_cs_peer *) curcon->user;
+	peer->sock_stat = RECV_HEAD_ING;
 
 	t_uc_oss_http_header *header = (t_uc_oss_http_header *) &(peer->header);
 	if (parse_header(header, data))
@@ -352,7 +353,6 @@ recvfileing:
 			break;
 		if (subret == RECV_CLOSE)
 		{
-			task0->task.base.overstatus = OVER_E_OPEN_SRCFILE;
 			peer->recvtask = NULL;
 			vfs_set_task(task0, TASK_FIN);
 			return RECV_CLOSE;
