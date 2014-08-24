@@ -60,11 +60,15 @@ static void create_header(char *httpheader, t_task_base *base, t_task_sub *sub)
 	strcat(httpheader, sbuf);
 
 	memset(sbuf, 0, sizeof(sbuf));
-	snprintf(sbuf, sizeof(sbuf), "start: 0\r\n");
+	snprintf(sbuf, sizeof(sbuf), "Content-Length: %ld\r\n", sub->end - sub->start + 1);
 	strcat(httpheader, sbuf);
 
 	memset(sbuf, 0, sizeof(sbuf));
-	snprintf(sbuf, sizeof(sbuf), "end: %ld\r\n", base->fsize - 1);
+	snprintf(sbuf, sizeof(sbuf), "start: %ld\r\n", sub->start);
+	strcat(httpheader, sbuf);
+
+	memset(sbuf, 0, sizeof(sbuf));
+	snprintf(sbuf, sizeof(sbuf), "end: %ld\r\n", sub->end);
 	strcat(httpheader, sbuf);
 
 	memset(sbuf, 0, sizeof(sbuf));

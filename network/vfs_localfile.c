@@ -122,7 +122,7 @@ int open_tmp_localfile_4_write(t_task_base *task, int *fd, t_task_sub *sub)
 {
 	char outfile[256] = {0x0};
 	get_localdir(task->filename, outfile);
-	snprintf(task->tmpfile, sizeof(task->tmpfile), "%s_%ld_%ld", outfile, sub->start, sub->end);
+	snprintf(task->tmpfile, sizeof(task->tmpfile), "%s_%ld_%ld", outfile, sub->idx, sub->count);
 	if (createdir(task->tmpfile))
 	{
 		LOG(glogfd, LOG_ERROR, "dir %s create %m!\n", task->tmpfile);

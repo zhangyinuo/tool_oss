@@ -29,6 +29,7 @@ extern const char *sock_stat_cmd[] ;
 typedef struct {
 	list_head_t alist;
 	list_head_t hlist;
+	t_uc_oss_http_header header;
 	int fd;
 	int local_in_fd; /* 当cs接受对端文件传输时，打开的本地句柄 该fd由插件自己管理 */
 	uint32_t hbtime;

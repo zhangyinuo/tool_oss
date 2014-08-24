@@ -109,7 +109,71 @@ int svc_initconn(int fd)
 	return 0;
 }
 
-/*校验是否有一个完整请求*/
+static char * parse_item(char *src, char *item, char **end)
+{
+	char *p = strstr(src, item);
+	if (p == NULL)
+	{
+		LOG(vfs_sig_log, LOG_ERROR, "data[%s] no [%s]!\n", src, item);
+		return NULL;
+	}
+
+	p += strlen(item);
+	char *e = strstr(p, "\r\n");
+	if (e == NULL)
+	{
+		LOG(vfs_sig_log, LOG_ERROR, "data[%s] no [%s] end!\n", src, item);
+		return NULL;
+	}
+	*e = 0x0;
+
+	*end = e + 2;
+
+	return p;
+}
+
+static int parse_header(t_uc_oss_http_header *peer, char *data)
+{
+	char *end = NULL;
+
+	char *pret = parse_item(data, "filename: ", &end);
+	if (pret == NULL)
+		return -1;
+	snprintf(peer->filename, sizeof(peer->filename), "%s", pret);
+	data = end;
+
+	pret = parse_item(data, "type: ", &end);
+	if (pret == NULL)
+		return -1;
+	peer->type = atoi(pret);
+	data = end;
+
+	pret = parse_item(data, "datalen: ", &end);
+	if (pret == NULL)
+		return -1;
+	peer->datalen = atol(pret);
+	data = end;
+
+	pret = parse_item(data, "start: ", &end);
+	if (pret == NULL)
+		return -1;
+	peer->start = atol(pret);
+	data = end;
+
+	pret = parse_item(data, "end: ", &end);
+	if (pret == NULL)
+		return -1;
+	peer->end = atol(pret);
+	data = end;
+
+	pret = parse_item(data, "filemd5: ", &end);
+	if (pret == NULL)
+		return -1;
+	snprintf(peer->filemd5, sizeof(peer->filemd5), "%s", pret);
+
+	return 0;
+}
+
 static int check_req(int fd)
 {
 	LOG(vfs_sig_log, LOG_DEBUG, "%s:%s:%d\n", ID, FUNC, LN);
@@ -125,6 +189,16 @@ static int check_req(int fd)
 		return -1;
 	end += 4;
 
+	struct conn *curcon = &acon[fd];
+	vfs_cs_peer *peer = (vfs_cs_peer *) curcon->user;
+
+	t_uc_oss_http_header *header = (t_uc_oss_http_header *) &(peer->header);
+	if (parse_header(header, data))
+	{
+		LOG(vfs_sig_log, LOG_ERROR, "%s:%d fd[%d] ERROR parse_header error!\n", FUNC, LN, fd);
+		return RECV_CLOSE;
+	}
+	/*
 	char *pret = strstr(data, "HTTP/");
 	if (pret == NULL)
 	{
@@ -154,10 +228,27 @@ static int check_req(int fd)
 	}
 
 	off_t fsize = atol(pleng + strlen("Content-Length: "));
+	*/
+
+	t_vfs_tasklist *task = NULL;
+	int ret = vfs_get_task(&task, TASK_HOME);
+	if (ret != GET_TASK_OK)
+	{
+		LOG(vfs_sig_log, LOG_ERROR, "vfs_get_task err %m %s:%s\n", header->srcip, header->filename);
+		return -1;
+	}
+
+	t_task_base *base = (t_task_base *) &(task->task.base);
+	t_task_sub *sub = (t_task_sub *) &(task->task.sub);
+	memset(base, 0, sizeof(t_task_base));
+	memset(sub, 0, sizeof(t_task_sub));
+
+	peer->recvtask = task;
+	convert_httpheader_2_task(header, base, sub);
 
 	int clen = end - data;
-	int ret = do_req(fd, fsize);
-	LOG(vfs_sig_log, LOG_DEBUG, "%s:%d fd[%d] Content-Length: %ld!\n", FUNC, LN, fd, fsize);
+	ret = do_req(fd, header->datalen);
+	LOG(vfs_sig_log, LOG_DEBUG, "%s:%d fd[%d] Content-Length: %ld!\n", FUNC, LN, fd, header->datalen);
 	consume_client_data(fd, clen);
 	return ret;
 }
