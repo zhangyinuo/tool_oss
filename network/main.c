@@ -36,7 +36,7 @@ extern t_g_config g_config;
 t_ip_info self_ipinfo;
 time_t vfs_start_time;  /*vfs Æô¶¯Ê±¼ä*/
 int glogfd = -1;
-char *iprole[] = {"unkown", "src", "dst", "tracker", "voss_master", "self_ip"}; 
+char *iprole[] = {"unkown", "uc", "sm", "tracker", "voss_master", "self_ip"}; 
 
 static int init_glog()
 {

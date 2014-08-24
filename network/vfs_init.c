@@ -251,7 +251,7 @@ static int sub_add_cluste_ip(char *name, uint8_t role)
 
 static int add_cluste_ip()
 {
-	return sub_add_cluste_ip("agentip", ROLE_FCS) || sub_add_cluste_ip("serverip", ROLE_CS);
+	return sub_add_cluste_ip("ucip", ROLE_FCS) || sub_add_cluste_ip("smip", ROLE_CS);
 }
 
 int reload_cfg()
