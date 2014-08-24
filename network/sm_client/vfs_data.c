@@ -273,8 +273,9 @@ static int check_req(int fd)
 	peer->recvtask = task;
 
 	int clen = end - data;
-	ret = do_req(fd, header->datalen);
-	LOG(vfs_sig_log, LOG_DEBUG, "%s:%d fd[%d] Content-Length: %ld!\n", FUNC, LN, fd, header->datalen);
+	off_t content_length = header->end - header->start + 1;
+	ret = do_req(fd, content_length);
+	LOG(vfs_sig_log, LOG_DEBUG, "%s:%d fd[%d] Content-Length: %ld!\n", FUNC, LN, fd, content_length);
 	consume_client_data(fd, clen);
 	return ret;
 }
