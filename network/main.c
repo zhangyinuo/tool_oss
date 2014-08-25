@@ -144,8 +144,11 @@ int main(int argc, char **argv) {
 	memset(&arg, 0, sizeof(arg));
 	snprintf(arg.name, sizeof(arg.name), "./%s_client.so", srole);
 	LOG(glogfd, LOG_NORMAL, "prepare start %s\n", arg.name);
-	arg.port = g_config.sig_port;
-	arg.flag = 1;
+	if (ROLE_FCS != self_ipinfo.role)
+	{
+		arg.port = g_config.sig_port;
+		arg.flag = 1;
+	}
 	arg.maxevent = myconfig_get_intval("vfs_sig_maxevent", 4096);
 	if (init_vfs_thread(&arg))
 		goto error;
