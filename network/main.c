@@ -31,6 +31,7 @@
 #include "vfs_file_filter.h"
 #include "vfs_tmp_status.h"
 #include "vfs_timer.h"
+#include "moni.h"
 
 extern t_g_config g_config;
 t_ip_info self_ipinfo;
@@ -91,6 +92,7 @@ static void main_loop(struct threadstat *thst)
 		sleep(5);
 		scan_delay_task();
 		thread_reached(thst);
+		check_tc();
 
 		time_t cur = time(NULL);
 		if (cur - last > 3600)
@@ -124,6 +126,7 @@ int main(int argc, char **argv) {
 	ICALL(vfs_init);
 	ICALL(init_task_info);
 	ICALL(init_file_filter);
+	ICALL(init_tc);
 	if (get_self_info(&self_ipinfo))
 	{
 		LOG(glogfd, LOG_ERROR, "get_self_role ERR!\n");
