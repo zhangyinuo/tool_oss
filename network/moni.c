@@ -79,8 +79,10 @@ void check_tc()
 	if (get_tc_recv_send(&recv_bytes_2, &send_bytes_2))
 		return;
 
+	LOG(glogfd, LOG_DEBUG, "send = %lu send = %lu limit = %d\n", send_bytes_2, send_bytes, send_limit);
 	if (send_limit > 0)
 		cal_limit(&send_pass_ratio, send_bytes_2, send_bytes, send_limit);
+	LOG(glogfd, LOG_DEBUG, "recv = %lu recv = %lu limit = %d\n", recv_bytes_2, recv_bytes, recv_limit);
 	if (recv_limit > 0)
 		cal_limit(&recv_pass_ratio, recv_bytes_2, recv_bytes, recv_limit);
 }
@@ -95,9 +97,9 @@ int init_tc()
 		LOG(glogfd, LOG_DEBUG, "no tc_face_name.\n");
 		return 0;
 	}
-	LOG(glogfd, LOG_DEBUG, "tc_face_name = %s\n", tc_face_name);
 
 	recv_limit = myconfig_get_intval("tc_recv_limit", -1);
 	send_limit = myconfig_get_intval("tc_send_limit", -1);
+	LOG(glogfd, LOG_DEBUG, "tc_face_name = %s send = %d recv = %d\n", tc_face_name, send_limit, recv_limit);
 	return 0;
 }
