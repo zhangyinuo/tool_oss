@@ -16,6 +16,7 @@
 #include "log.h"
 #include "watchdog.h"
 #include <dlfcn.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/prctl.h>
@@ -26,6 +27,11 @@ static __thread int lfd;
 static __thread int maxevent;
 static __thread struct mylib solib;
 static __thread char *iobuf;
+static __thread list_head_t send_list;
+static __thread list_head_t recv_list;
+
+extern int recv_pass_ratio;
+extern int send_pass_ratio;
 
 static int sub_init_signalling(char *so)
 {
@@ -154,12 +160,24 @@ void do_close(int fd)
 	}
 }
 
+static void add_to_pend(list_head_t *item, list_head_t *llist)
+{
+	list_del_init(item);
+	list_add_tail(item, llist);
+}
+
 static void do_send(int fd)
 {
 	LOG(glogfd, LOG_TRACE, "%s:%s:%d\n", ID, FUNC, LN);
+
+	struct conn *curcon = &acon[fd];
+	if ((rand() & max_pend_value) > send_pass_ratio)
+	{
+		add_to_pend(&(curcon->send_pend_list), &send_list);
+		return;
+	}
 	int ret = SEND_ADD_EPOLLIN;
 	int n = 0;
-	struct conn *curcon = &acon[fd];
 	if (curcon->fd < 0)
 	{
 		LOG(glogfd, LOG_DEBUG, "fd %d already be closed %s\n", fd, FUNC);
@@ -258,6 +276,11 @@ static void do_recv(int fd)
 		LOG(glogfd, LOG_DEBUG, "fd %d already be closed %s\n", fd, FUNC);
 		return;
 	}
+	if ((rand() & max_pend_value) > recv_pass_ratio)
+	{
+		add_to_pend(&(curcon->recv_pend_list), &recv_list);
+		return;
+	}
 
 	int n = -1;
 	while (1)
@@ -316,6 +339,23 @@ static void do_recv(int fd)
 			LOG(glogfd, LOG_ERROR, "fd[%d] close %s:%d!\n", fd, ID, LN);
 			do_close(fd);
 			break;
+	}
+}
+
+static void scan_pend_list()
+{
+	struct conn *peer = NULL;
+	list_head_t *l;
+	list_for_each_entry_safe_l(peer, l, &send_list, send_pend_list)
+	{
+		list_del_init(&(peer->send_pend_list));
+		do_send(peer->fd);
+	}
+
+	list_for_each_entry_safe_l(peer, l, &recv_list, recv_pend_list)
+	{
+		list_del_init(&(peer->recv_pend_list));
+		do_recv(peer->fd);
 	}
 }
 
@@ -393,6 +433,8 @@ int vfs_signalling_thread(void *arg)
 		stop = 1;
 		return -1;
 	}
+	INIT_LIST_HEAD(&send_list);
+	INIT_LIST_HEAD(&recv_list);
 
 	struct threadstat *thst = get_threadstat();
 	int event = EPOLLIN;
@@ -413,6 +455,7 @@ int vfs_signalling_thread(void *arg)
 				do_process(pev[i].data.fd, pev[i].events);
 		}
 		thread_reached(thst);
+		scan_pend_list();
 		now = time(NULL);
 		if (now > last + g_config.cktimeout)
 		{

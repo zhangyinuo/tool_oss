@@ -20,6 +20,7 @@
 
 extern struct conn *acon ;
 extern int glogfd;
+extern int max_pend_value;
 
 //Êý¾Ý»º³åÇø
 struct mybuff {
@@ -38,6 +39,8 @@ struct conn {
 	struct mybuff send_buff;	//send buffer for client
 	struct mybuff recv_buff;	//recv buffer for client
 	int send_len;            //send len between call svc_send
+	list_head_t recv_pend_list;
+	list_head_t send_pend_list;
 	void* user;				//user custom data
 };
 
