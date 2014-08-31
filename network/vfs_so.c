@@ -177,7 +177,6 @@ static void do_send(int fd)
 		add_to_pend(&(curcon->send_pend_list), &send_list);
 		return;
 	}
-	LOG(glogfd, LOG_NORMAL, "%d:%s:%s:%d\n", fd, ID, FUNC, LN);
 	int ret = SEND_ADD_EPOLLIN;
 	int n = 0;
 	if (curcon->fd < 0)
@@ -284,7 +283,6 @@ static void do_recv(int fd)
 		add_to_pend(&(curcon->recv_pend_list), &recv_list);
 		return;
 	}
-	LOG(glogfd, LOG_NORMAL, "%d:%s:%s:%d\n", fd, ID, FUNC, LN);
 
 	int n = -1;
 	while (1)
