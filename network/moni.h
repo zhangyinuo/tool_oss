@@ -4,6 +4,6 @@
 
 int init_tc();
 
-int check_tc();
+void check_tc();
 
 #endif
