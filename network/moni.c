@@ -97,7 +97,7 @@ int init_tc()
 	}
 	LOG(glogfd, LOG_DEBUG, "tc_face_name = %s\n", tc_face_name);
 
-	recv_limit = myconfig_get_intval("recv_limit", -1);
-	send_limit = myconfig_get_intval("send_limit", -1);
+	recv_limit = myconfig_get_intval("tc_recv_limit", -1);
+	send_limit = myconfig_get_intval("tc_send_limit", -1);
 	return 0;
 }
