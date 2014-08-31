@@ -12,6 +12,7 @@
 #include <sys/resource.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "list.h"
 #include "myconfig.h"
 #include "mybuff.h"
 #include "fdinfo.h"
@@ -43,6 +44,8 @@ int init_fdinfo(void) {
 	{
 		mybuff_init(&(acon[i].send_buff));
 		mybuff_init(&(acon[i].recv_buff));
+		INIT_LIST_HEAD(&(acon[i].send_pend_list));
+		INIT_LIST_HEAD(&(acon[i].recv_pend_list));
 	}
 	return 0;
 }
