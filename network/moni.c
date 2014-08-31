@@ -64,6 +64,8 @@ static void cal_limit(int *result, uint64_t two, uint64_t one, int int_limit)
 
 void check_tc() 
 {
+	if (tc_face_name == NULL)
+		return;
 	uint64_t recv_bytes = 0;
 	uint64_t send_bytes = 0;
 
