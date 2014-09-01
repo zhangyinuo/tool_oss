@@ -33,6 +33,8 @@ static __thread list_head_t recv_list;
 extern int recv_pass_ratio;
 extern int send_pass_ratio;
 
+static unsigned int rand_seed = 10000;
+
 static int sub_init_signalling(char *so)
 {
 	solib.handle = dlopen(so, RTLD_NOW);
@@ -176,6 +178,10 @@ static void do_send(int fd)
 		LOG(glogfd, LOG_DEBUG, "fd %d already be closed %s\n", fd, FUNC);
 		return;
 	}
+	rand_seed++;
+	if (rand_seed < max_pend_value)
+		rand_seed = max_pend_value + 1;
+	srand(rand_seed);
 	if ((rand() & max_pend_value) > send_pass_ratio)
 	{
 		LOG(glogfd, LOG_NORMAL, "%d:%s:%s:%d\n", fd, ID, FUNC, LN);
@@ -277,6 +283,10 @@ static void do_recv(int fd)
 		LOG(glogfd, LOG_DEBUG, "fd %d already be closed %s\n", fd, FUNC);
 		return;
 	}
+	rand_seed++;
+	if (rand_seed < max_pend_value)
+		rand_seed = max_pend_value + 1;
+	srand(rand_seed);
 	if ((rand() & max_pend_value) > recv_pass_ratio)
 	{
 		LOG(glogfd, LOG_NORMAL, "%d:%s:%s:%d\n", fd, ID, FUNC, LN);
@@ -448,7 +458,7 @@ int vfs_signalling_thread(void *arg)
 	LOG(glogfd, LOG_DEBUG, "%s:%s:%d\n", ID, FUNC, LN);
 	while (!stop)
 	{
-	    n = epoll_wait(epfd, pev, maxevent, 1000);
+	    n = epoll_wait(epfd, pev, maxevent, 10000);
 	    for(i = 0; i < n; i++) 
 		{
 			if (argp->port > 0 && pev[i].data.fd == lfd)
@@ -457,11 +467,11 @@ int vfs_signalling_thread(void *arg)
 				do_process(pev[i].data.fd, pev[i].events);
 		}
 		thread_reached(thst);
-		scan_pend_list();
 		now = time(NULL);
 		if (now > last + g_config.cktimeout)
 		{
 			last = now;
+			scan_pend_list();
 			if (solib.svc_timeout)
 				solib.svc_timeout();
 		}
