@@ -495,7 +495,7 @@ int vfs_signalling_thread(void *arg)
 	LOG(glogfd, LOG_DEBUG, "%s:%s:%d\n", ID, FUNC, LN);
 	while (!stop)
 	{
-	    n = epoll_wait(epfd, pev, maxevent, 100000);
+	    n = epoll_wait(epfd, pev, maxevent, 1000);
 	    for(i = 0; i < n; i++) 
 		{
 			if (argp->port > 0 && pev[i].data.fd == lfd)
