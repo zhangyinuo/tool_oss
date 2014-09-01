@@ -18,10 +18,10 @@ volatile int recv_pass_ratio;
 volatile int send_pass_ratio; 
 int max_pend_value = 0xFF;
 static int pass_step = 3;
-static int pass_up_value = 200;
-static int max_pass_up_value = 250;
-static int max_pass_up_value_2 = 350;
-static int pass_down_value = 120;
+static int pass_up_value = 240;
+static int max_pass_up_value = 300;
+static int max_pass_up_value_2 = 400;
+static int pass_down_value = 160;
 static int min_pass_size = 1024;
 
 static int get_tc_recv_send(uint64_t *recv_bytes, uint64_t *send_bytes)
@@ -56,7 +56,7 @@ static int get_tc_recv_send(uint64_t *recv_bytes, uint64_t *send_bytes)
 	return 0;
 }
 
-static void cal_limit(int *result, uint64_t two, uint64_t one, int int_limit)
+static void cal_limit(volatile int *result, uint64_t two, uint64_t one, int int_limit)
 {
 	if (two - one < min_pass_size)
 	{
