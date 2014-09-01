@@ -66,7 +66,7 @@ static void cal_limit(int *result, uint64_t two, uint64_t one, int int_limit)
 		return;
 	}
 	int cur_speed = 8 * (two - one) / INTVAL_SEC;
-	int cur_pass_ratio = max_pend_value * int_limit / cur_speed;
+	int cur_pass_ratio = max_pend_value * cur_speed / int_limit;
 	if (cur_pass_ratio <= pass_down_value)
 	{
 		*result += pass_step;
