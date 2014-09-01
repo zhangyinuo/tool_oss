@@ -8,7 +8,7 @@
 #include "util.h"
 #include "log.h"
 
-#define INTVAL_SEC 10
+#define INTVAL_SEC 5
 
 static char *tc_face_name = NULL;
 static int recv_limit = 0;
@@ -17,6 +17,9 @@ static int send_limit = 0;
 int recv_pass_ratio;
 int send_pass_ratio; 
 int max_pend_value = 0xFF;
+static int pass_step = 3;
+static int pass_up_value = 200;
+static int pass_down_value = 160;
 
 static int get_tc_recv_send(uint64_t *recv_bytes, uint64_t *send_bytes)
 {
@@ -53,15 +56,19 @@ static int get_tc_recv_send(uint64_t *recv_bytes, uint64_t *send_bytes)
 static void cal_limit(int *result, uint64_t two, uint64_t one, int int_limit)
 {
 	int cur_speed = 8 * (two - one) / INTVAL_SEC;
-	if (cur_speed <= int_limit)
+	int cur_pass_ratio = max_pend_value * int_limit / cur_speed;
+	if (cur_pass_ratio <= pass_down_value)
 	{
-		*result = *result << 1;
+		*result += pass_step;
 		if (*result > max_pend_value)
 			*result = max_pend_value;
 		return ;
 	}
 
-	*result = int_limit * (*result) / cur_speed;
+	if (cur_pass_ratio <= pass_up_value)
+		return ;
+
+	*result = (*result) >> 1;
 }
 
 void check_tc() 

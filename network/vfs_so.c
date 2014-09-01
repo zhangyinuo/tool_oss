@@ -172,6 +172,11 @@ static void do_send(int fd)
 {
 	LOG(glogfd, LOG_TRACE, "%s:%s:%d\n", ID, FUNC, LN);
 
+	if (fd < 0)
+	{
+		LOG(glogfd, LOG_DEBUG, "fd %d error already be closed %s\n", fd, FUNC);
+		return;
+	}
 	struct conn *curcon = &acon[fd];
 	if (curcon->fd < 0)
 	{
@@ -277,6 +282,11 @@ static void do_send(int fd)
 
 static void do_recv(int fd)
 {
+	if (fd < 0)
+	{
+		LOG(glogfd, LOG_DEBUG, "fd %d error already be closed %s\n", fd, FUNC);
+		return;
+	}
 	struct conn *curcon = &acon[fd];
 	if (curcon->fd < 0)
 	{
