@@ -66,11 +66,11 @@ static void cal_limit(int *result, uint64_t two, uint64_t one, int int_limit)
 			*result = 5;
 		return;
 	}
-	int cur_speed = 8 * (two - one) / INTVAL_SEC;
-	int cur_pass_ratio = max_pend_value * cur_speed / int_limit;
+	uint64_t cur_speed = 8 * (two - one) / INTVAL_SEC;
+	uint64_t cur_pass_ratio = max_pend_value * cur_speed / int_limit;
 	if (cur_pass_ratio <= pass_down_value)
 	{
-		LOG(glogfd, LOG_DEBUG, "%s %d %lu %lu %d %d %d\n", ID, LN, two, one, int_limit, cur_pass_ratio, pass_down_value);
+		LOG(glogfd, LOG_DEBUG, "%s %d %lu %lu %d %lu %d\n", ID, LN, two, one, int_limit, cur_pass_ratio, pass_down_value);
 		*result += pass_step;
 		if (*result > max_pend_value)
 			*result = max_pend_value;
