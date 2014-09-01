@@ -5,6 +5,7 @@
 */
 
 #include "c_api.h"
+#include <libgen.h>
 static int insert_sub_task(t_task_base *base0, int idx, int count, off_t start, off_t end)
 {
 	t_vfs_tasklist *task = NULL;
@@ -34,10 +35,38 @@ static int insert_sub_task(t_task_base *base0, int idx, int count, off_t start, 
 	return 0;
 }
 
+static void update_sync_time(char *filename)
+{
+	struct stat filestat;
+	if (stat(filename, &filestat))
+	{
+		LOG(vfs_sig_log, LOG_ERROR, "stat %s error %m\n", filename);
+		return ;
+	}
+
+	char sync_time_file[256] = {0x0};
+	snprintf(sync_time_file, sizeof(sync_time_file), "%s/.sync_time", dirname(filename));
+
+	FILE *fp = fopen(sync_time_file, "w");
+	if (!fp)
+	{
+		LOG(vfs_sig_log, LOG_ERROR, "open %s error %m\n", sync_time_file);
+		return ;
+	}
+
+	fprintf(fp, "%ld", filestat.st_ctime); 
+
+	fclose(fp);
+}
+
 static int split_task(t_task_base *base)
 {
 	if (base->fsize == 0)
 		return 0;
+
+	char filename[256] = {0x0};
+	snprintf(filename, sizeof(filename), "%s", base->filename);
+	update_sync_time(filename);
 
 	int splic_count = base->fsize / g_config.splic_min_size;
 	if (base->fsize % g_config.splic_min_size)
