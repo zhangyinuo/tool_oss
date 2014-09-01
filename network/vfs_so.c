@@ -468,7 +468,7 @@ int vfs_signalling_thread(void *arg)
 	LOG(glogfd, LOG_DEBUG, "%s:%s:%d\n", ID, FUNC, LN);
 	while (!stop)
 	{
-	    n = epoll_wait(epfd, pev, maxevent, 10000);
+	    n = epoll_wait(epfd, pev, maxevent, 100000);
 	    for(i = 0; i < n; i++) 
 		{
 			if (argp->port > 0 && pev[i].data.fd == lfd)
@@ -477,11 +477,11 @@ int vfs_signalling_thread(void *arg)
 				do_process(pev[i].data.fd, pev[i].events);
 		}
 		thread_reached(thst);
+		scan_pend_list();
 		now = time(NULL);
 		if (now > last + g_config.cktimeout)
 		{
 			last = now;
-			scan_pend_list();
 			if (solib.svc_timeout)
 				solib.svc_timeout();
 		}
