@@ -165,7 +165,7 @@ void do_close(int fd)
 static void add_to_pend(list_head_t *item, list_head_t *llist)
 {
 	list_del_init(item);
-	list_add_tail(item, llist);
+	list_add_head(item, llist);
 }
 
 static void do_send(int fd)
