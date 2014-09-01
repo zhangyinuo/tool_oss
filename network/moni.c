@@ -18,7 +18,8 @@ int recv_pass_ratio;
 int send_pass_ratio; 
 int max_pend_value = 0xFF;
 static int pass_step = 3;
-static int pass_up_value = 240;
+static int pass_up_value = 200;
+static int max_pass_up_value = 250;
 static int pass_down_value = 120;
 static int min_pass_size = 1024;
 
@@ -81,7 +82,16 @@ static void cal_limit(int *result, uint64_t two, uint64_t one, int int_limit)
 		return ;
 
 	LOG(glogfd, LOG_DEBUG, "%s %d\n", ID, LN);
-	*result -= pass_step; 
+	if (cur_pass_ratio <= max_pass_up_value)
+	{
+		LOG(glogfd, LOG_DEBUG, "%s %d\n", ID, LN);
+		*result -= pass_step; 
+	}
+	else
+	{
+		LOG(glogfd, LOG_DEBUG, "%s %d\n", ID, LN);
+		*result = *result >> 1;
+	}
 	if (*result < 5)
 		*result = 5;
 }
