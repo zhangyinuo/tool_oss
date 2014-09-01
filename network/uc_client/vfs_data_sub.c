@@ -4,6 +4,7 @@
 * 56VFS may be copied only under the terms of the GNU General Public License V3
 */
 
+extern char hostname[128];
 #include "c_api.h"
 #include <libgen.h>
 static int insert_sub_task(t_task_base *base0, int idx, int count, off_t start, off_t end)
@@ -72,6 +73,7 @@ static int split_task(t_task_base *base)
 	if (base->fsize % g_config.splic_min_size)
 		splic_count++;
 
+	snprintf(base->hostname, sizeof(base->hostname), "%s", hostname);
 	int idx = 1;
 	off_t start = 0;
 	off_t end = 0;

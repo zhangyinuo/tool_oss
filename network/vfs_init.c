@@ -320,21 +320,6 @@ int get_isp_by_name(char *name)
 int vfs_init()
 {
 	memset(hostname, 0, sizeof(hostname));
-	char *defaulthost = "/home/server/fcs.txt";
-	FILE *fp = fopen(defaulthost, "r");
-	if (fp)
-	{
-		fgets(hostname, sizeof(hostname) - 1, fp);
-		fclose(fp);
-		char *t = strrchr(hostname, '\n');
-		if (t)
-			*t = 0x0;
-		if (strlen(hostname) < 5)
-		{
-			LOG(glogfd, LOG_ERROR, "err hostname [%s]\n", hostname);
-			memset(hostname, 0, sizeof(hostname));
-		}
-	}
 	if (strlen(hostname) == 0 && gethostname(hostname, sizeof(hostname)))
 	{
 		LOG(glogfd, LOG_ERROR, "gethostname error %m\n");

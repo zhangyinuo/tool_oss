@@ -18,11 +18,11 @@ enum {DISK_OK = 0, DISK_SPACE_TOO_SMALL, DISK_ERR};
 /*
  *校验本地文件信息 包括文件名，大小，md5校验
  */
-int check_localfile_md5(char *srcfile, char *md5sum);
+int check_localfile_md5(char *hostname, char *srcfile, char *md5sum);
 
 int check_last_file(t_task_base *task, t_task_sub *sub);
 
-int get_localdir(char *srcfile, char *dstfile);
+int get_localdir(char *hostname, char *srcfile, char *dstfile);
 
 /*
  *CS作为目的机器时，先在本地打开一个临时文件
@@ -34,7 +34,7 @@ int open_tmp_localfile_4_write(t_task_base *task, int *fd, t_task_sub *sub);
  */
 int close_tmp_check_mv(t_task_base *task, int fd);
 
-int delete_localfile(char *srcfile);
+int delete_localfile(char *hostname, char *srcfile);
 
 void localfile_link_task(t_task_base *task);
 

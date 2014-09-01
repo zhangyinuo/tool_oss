@@ -51,10 +51,12 @@ static int createdir(char *file)
 	return 0;
 }
 
-int get_localdir(char *srcfile, char *dstfile)
+int get_localdir(char *hostname, char *srcfile, char *dstfile)
 {
-	char *p = srcfile + g_config.src_root_len;
-	sprintf(dstfile, "%s/%s", myconfig_get_value("vfs_dst_datadir"), p);
+	char tmpfile[256] = {0x0};
+	snprintf(tmpfile, sizeof(tmpfile), "%s", srcfile);
+	char *p = basename(tmpfile);
+	sprintf(dstfile, "%s/%s/%s", myconfig_get_value("vfs_dst_datadir"), hostname, p);
 	return 0;
 }
 
@@ -69,20 +71,20 @@ void real_rm_file(char *file)
 	LOG(glogfd, LOG_NORMAL, "file [%s] be unlink\n", file);
 }
 
-int delete_localfile(char *srcfile)
+int delete_localfile(char *hostname, char *srcfile)
 {
 	char outfile[256] = {0x0};
-	get_localdir(srcfile, outfile);
+	get_localdir(hostname, srcfile, outfile);
 	if (unlink(outfile))
 		LOG(glogfd, LOG_ERROR, "file unlink err[%s:%m]\n", outfile);
 
 	return LOCALFILE_OK;
 }
 
-int check_localfile_md5(char *srcfile, char *md5sum)
+int check_localfile_md5(char *hostname, char *srcfile, char *md5sum)
 {
 	char outfile[256] = {0x0};
-	get_localdir(srcfile, outfile);
+	get_localdir(hostname, srcfile, outfile);
 	char filemd5[36] = {0x0};
 	getfilemd5view((const char*)outfile, (unsigned char *)filemd5);
 
@@ -92,7 +94,7 @@ int check_localfile_md5(char *srcfile, char *md5sum)
 int check_last_file(t_task_base *task, t_task_sub *sub)
 {
 	char outfile[256] = {0x0};
-	get_localdir(task->filename, outfile);
+	get_localdir(task->hostname, task->filename, outfile);
 	snprintf(task->tmpfile, sizeof(task->tmpfile), "%s_%ld_%ld", outfile, sub->start, sub->end);
 	if (createdir(task->tmpfile))
 	{
@@ -121,15 +123,15 @@ int check_last_file(t_task_base *task, t_task_sub *sub)
 int open_tmp_localfile_4_write(t_task_base *task, int *fd, t_task_sub *sub)
 {
 	char outfile[256] = {0x0};
-	get_localdir(task->filename, outfile);
+	get_localdir(task->hostname, task->filename, outfile);
 	snprintf(task->tmpfile, sizeof(task->tmpfile), "%s_%d_%d", outfile, sub->idx, sub->count);
 	if (createdir(task->tmpfile))
 	{
 		LOG(glogfd, LOG_ERROR, "dir %s create %m!\n", task->tmpfile);
 		return LOCALFILE_DIR_E;
 	}
-	*fd = open(task->tmpfile, O_CREAT | O_WRONLY| O_LARGEFILE |O_APPEND, 0644);
-	//*fd = open(task->tmpfile, O_CREAT | O_WRONLY| O_LARGEFILE |O_TRUNC, 0644);
+	//*fd = open(task->tmpfile, O_CREAT | O_WRONLY| O_LARGEFILE |O_APPEND, 0644);
+	*fd = open(task->tmpfile, O_CREAT | O_WRONLY| O_LARGEFILE |O_TRUNC, 0644);
 	if (*fd < 0)
 	{
 		LOG(glogfd, LOG_ERROR, "open %s err %m\n", task->tmpfile);

@@ -34,6 +34,7 @@ typedef struct {
 	uint8_t  action_type;
 	uint8_t  type;
 	char 	 filename[255];
+	char 	 hostname[128];
 	char     filemd5[36];
 	char	 srcip[16];
 	uint32_t retcode;

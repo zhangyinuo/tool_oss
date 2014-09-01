@@ -84,7 +84,11 @@ static void create_header(char *httpheader, t_task_base *base, t_task_sub *sub)
 	strcat(httpheader, sbuf);
 
 	memset(sbuf, 0, sizeof(sbuf));
-	snprintf(sbuf, sizeof(sbuf), "count: %d\r\n\r\n", sub->count);
+	snprintf(sbuf, sizeof(sbuf), "count: %d\r\n", sub->count);
+	strcat(httpheader, sbuf);
+
+	memset(sbuf, 0, sizeof(sbuf));
+	snprintf(sbuf, sizeof(sbuf), "hostname: %s\r\n\r\n", base->hostname);
 	strcat(httpheader, sbuf);
 }
 

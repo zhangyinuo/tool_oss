@@ -36,6 +36,7 @@ typedef struct {
 	char filename[256];
 	char tmpfile[256];
 	char data[1024];
+	char hostname[256];
 	char filemd5[36];
 	char srcip[16];
 	int  srcport;

@@ -114,6 +114,7 @@ static void convert_httpheader_2_task(t_uc_oss_http_header *header, t_task_base 
 	base->type = header->type;
 	snprintf(base->filemd5, sizeof(base->filemd5), "%s", header->filemd5);
 	snprintf(base->filename, sizeof(base->filename), "%s", header->filename);
+	snprintf(base->hostname, sizeof(base->hostname), "%s", header->hostname);
 
 	sub->idx = header->idx;
 	sub->count = header->count;
@@ -195,6 +196,12 @@ static int parse_header(t_uc_oss_http_header *peer, char *data)
 	if (pret == NULL)
 		return -1;
 	peer->count = atol(pret);
+	data = end;
+
+	pret = parse_item(data, "hostname: ", &end);
+	if (pret == NULL)
+		return -1;
+	snprintf(peer->hostname, sizeof(peer->hostname), "%s", pret);
 
 	return 0;
 }

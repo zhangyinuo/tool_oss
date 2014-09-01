@@ -51,10 +51,10 @@ static void create_header(char *httpheader, char *filename, char *filemd5, int t
 	strcat(httpheader, sbuf);
 }
 
-static int do_merge_file(char *srcip, char *filename, int count, char *filemd5)
+static int do_merge_file(char *hostname, char *srcip, char *filename, int count, char *filemd5)
 {
 	char outfile[256] = {0x0};
-	get_localdir(filename, outfile);
+	get_localdir(hostname, filename, outfile);
 	int ofd = open(outfile, O_CREAT | O_WRONLY| O_LARGEFILE |O_TRUNC, 0644);
 	if (ofd < 0)
 	{
@@ -186,7 +186,7 @@ static void check_fin_task()
 		{
 			add_task_to_alltask(task);
 			if (check_task_allsub_isok(task->task.base.filename, task->task.sub.count) == 0)
-				do_merge_file(task->task.base.srcip, task->task.base.filename, task->task.sub.count, task->task.base.filemd5);
+				do_merge_file(task->task.base.hostname, task->task.base.srcip, task->task.base.filename, task->task.sub.count, task->task.base.filemd5);
 		}
 	}
 }
