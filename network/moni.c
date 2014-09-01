@@ -59,7 +59,7 @@ static void cal_limit(int *result, uint64_t two, uint64_t one, int int_limit)
 		return ;
 	}
 
-	*result = int_limit * max_pend_value / cur_speed;
+	*result = int_limit * (*result) / cur_speed;
 }
 
 void check_tc() 
@@ -79,12 +79,12 @@ void check_tc()
 	if (get_tc_recv_send(&recv_bytes_2, &send_bytes_2))
 		return;
 
-	LOG(glogfd, LOG_DEBUG, "send = %lu send = %lu limit = %d\n", send_bytes_2, send_bytes, send_limit);
 	if (send_limit > 0)
 		cal_limit(&send_pass_ratio, send_bytes_2, send_bytes, send_limit);
-	LOG(glogfd, LOG_DEBUG, "recv = %lu recv = %lu limit = %d\n", recv_bytes_2, recv_bytes, recv_limit);
+	LOG(glogfd, LOG_DEBUG, "send = %lu send = %lu limit = %d pass = %d\n", send_bytes_2, send_bytes, send_limit, send_pass_ratio);
 	if (recv_limit > 0)
 		cal_limit(&recv_pass_ratio, recv_bytes_2, recv_bytes, recv_limit);
+	LOG(glogfd, LOG_DEBUG, "recv = %lu recv = %lu limit = %d pass = %d\n", recv_bytes_2, recv_bytes, recv_limit, recv_pass_ratio);
 }
 
 int init_tc() 
