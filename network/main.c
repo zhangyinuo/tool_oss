@@ -89,7 +89,7 @@ static void main_loop(struct threadstat *thst)
 {
 	time_t last = time(NULL);
 	while(!stop) {
-		sleep(1);
+		sleep(5);
 		scan_delay_task();
 		thread_reached(thst);
 		check_tc();

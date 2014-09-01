@@ -8,7 +8,7 @@
 #include "util.h"
 #include "log.h"
 
-#define INTVAL_SEC 1
+#define INTVAL_SEC 5
 
 static char *tc_face_name = NULL;
 static int recv_limit = 0;
