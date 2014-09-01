@@ -171,6 +171,11 @@ static void do_send(int fd)
 	LOG(glogfd, LOG_TRACE, "%s:%s:%d\n", ID, FUNC, LN);
 
 	struct conn *curcon = &acon[fd];
+	if (curcon->fd < 0)
+	{
+		LOG(glogfd, LOG_DEBUG, "fd %d already be closed %s\n", fd, FUNC);
+		return;
+	}
 	if ((rand() & max_pend_value) > send_pass_ratio)
 	{
 		LOG(glogfd, LOG_NORMAL, "%d:%s:%s:%d\n", fd, ID, FUNC, LN);
@@ -179,11 +184,6 @@ static void do_send(int fd)
 	}
 	int ret = SEND_ADD_EPOLLIN;
 	int n = 0;
-	if (curcon->fd < 0)
-	{
-		LOG(glogfd, LOG_DEBUG, "fd %d already be closed %s\n", fd, FUNC);
-		return;
-	}
 	int localfd;
 	off_t start;
 	char* data;

@@ -129,8 +129,8 @@ int main(int argc, char **argv) {
 	ICALL(init_tc);
 	if (get_self_info(&self_ipinfo))
 	{
-		LOG(glogfd, LOG_ERROR, "get_self_role ERR!\n");
-		goto error;
+		LOG(glogfd, LOG_NORMAL, "get_self_role ERR!\n");
+		self_ipinfo.role = ROLE_FCS;
 	}
 	if (self_ipinfo.role <= UNKOWN || self_ipinfo.role >= SELF_IP)
 	{
