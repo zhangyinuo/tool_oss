@@ -20,6 +20,7 @@ int max_pend_value = 0xFF;
 static int pass_step = 3;
 static int pass_up_value = 200;
 static int pass_down_value = 160;
+static int min_pass_size = 1024;
 
 static int get_tc_recv_send(uint64_t *recv_bytes, uint64_t *send_bytes)
 {
@@ -55,6 +56,15 @@ static int get_tc_recv_send(uint64_t *recv_bytes, uint64_t *send_bytes)
 
 static void cal_limit(int *result, uint64_t two, uint64_t one, int int_limit)
 {
+	if (two - one < min_pass_size)
+	{
+		*result = *result << 1;
+		if (*result > max_pend_value)
+			*result = max_pend_value;
+		if (*result < 5)
+			*result = 5;
+		return;
+	}
 	int cur_speed = 8 * (two - one) / INTVAL_SEC;
 	int cur_pass_ratio = max_pend_value * int_limit / cur_speed;
 	if (cur_pass_ratio <= pass_down_value)
