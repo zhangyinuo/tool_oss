@@ -30,8 +30,8 @@ static __thread char *iobuf;
 static __thread list_head_t send_list;
 static __thread list_head_t recv_list;
 
-volatile extern int recv_pass_ratio;
-volatile extern int send_pass_ratio;
+extern int recv_pass_ratio;
+extern int send_pass_ratio;
 
 static unsigned int rand_seed = 10000;
 

@@ -14,8 +14,8 @@ static char *tc_face_name = NULL;
 static int recv_limit = 0;
 static int send_limit = 0;
 
-int recv_pass_ratio;
-int send_pass_ratio; 
+volatile int recv_pass_ratio;
+volatile int send_pass_ratio; 
 int max_pend_value = 0xFF;
 static int pass_step = 3;
 static int pass_up_value = 200;
