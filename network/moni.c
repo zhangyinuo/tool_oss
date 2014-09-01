@@ -8,7 +8,7 @@
 #include "util.h"
 #include "log.h"
 
-#define INTVAL_SEC 5
+#define INTVAL_SEC 1
 
 static char *tc_face_name = NULL;
 static int recv_limit = 0;
@@ -18,8 +18,8 @@ int recv_pass_ratio;
 int send_pass_ratio; 
 int max_pend_value = 0xFF;
 static int pass_step = 3;
-static int pass_up_value = 200;
-static int pass_down_value = 160;
+static int pass_up_value = 240;
+static int pass_down_value = 120;
 static int min_pass_size = 1024;
 
 static int get_tc_recv_send(uint64_t *recv_bytes, uint64_t *send_bytes)
@@ -81,7 +81,9 @@ static void cal_limit(int *result, uint64_t two, uint64_t one, int int_limit)
 		return ;
 
 	LOG(glogfd, LOG_DEBUG, "%s %d\n", ID, LN);
-	*result = (*result) >> 1;
+	*result -= pass_step; 
+	if (*result < 5)
+		*result = 5;
 }
 
 void check_tc() 
