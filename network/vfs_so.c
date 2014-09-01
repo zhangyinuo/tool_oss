@@ -299,10 +299,13 @@ static void do_recv(int fd)
 	srand(rand_seed);
 	if ((rand() & max_pend_value) > recv_pass_ratio)
 	{
-		LOG(glogfd, LOG_NORMAL, "%d:%s:%s:%d %d\n", fd, ID, FUNC, LN, recv_pass_ratio);
+		if (rand() % 100 > 98)
+			LOG(glogfd, LOG_NORMAL, "%d:%s:%s:%d %d\n", fd, ID, FUNC, LN, recv_pass_ratio);
 		add_to_pend(&(curcon->recv_pend_list), &recv_list);
 		return;
 	}
+	if (rand() % 100 > 95)
+		LOG(glogfd, LOG_NORMAL, "%d:%s:%s:%d %d\n", fd, ID, FUNC, LN, recv_pass_ratio);
 
 	int n = -1;
 	while (1)
