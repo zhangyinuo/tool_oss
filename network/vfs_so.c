@@ -30,6 +30,9 @@ static __thread char *iobuf;
 static __thread list_head_t send_list;
 static __thread list_head_t recv_list;
 
+static __thread list_head_t tmp_send_list;
+static __thread list_head_t tmp_recv_list;
+
 volatile extern int recv_pass_ratio;
 volatile extern int send_pass_ratio;
 
@@ -165,10 +168,10 @@ void do_close(int fd)
 static void add_to_pend(list_head_t *item, list_head_t *llist)
 {
 	list_del_init(item);
-	list_add_head(item, llist);
+	list_add_tail(item, llist);
 }
 
-static void do_send(int fd)
+static void do_send(int fd, int flag)
 {
 	LOG(glogfd, LOG_TRACE, "%s:%s:%d\n", ID, FUNC, LN);
 
@@ -190,7 +193,10 @@ static void do_send(int fd)
 	if ((rand() & max_pend_value) > send_pass_ratio)
 	{
 		LOG(glogfd, LOG_NORMAL, "%d:%s:%s:%d\n", fd, ID, FUNC, LN);
-		add_to_pend(&(curcon->send_pend_list), &send_list);
+		if (flag)
+			add_to_pend(&(curcon->send_pend_list), &tmp_send_list);
+		else
+			add_to_pend(&(curcon->send_pend_list), &send_list);
 		return;
 	}
 	int ret = SEND_ADD_EPOLLIN;
@@ -280,7 +286,7 @@ static void do_send(int fd)
 		}
 }
 
-static void do_recv(int fd)
+static void do_recv(int fd, int flag)
 {
 	if (fd < 0)
 	{
@@ -301,7 +307,10 @@ static void do_recv(int fd)
 	{
 		if (rand() % 100 > 98)
 			LOG(glogfd, LOG_NORMAL, "%d:%s:%s:%d %d\n", fd, ID, FUNC, LN, recv_pass_ratio);
-		add_to_pend(&(curcon->recv_pend_list), &recv_list);
+		if (flag)
+			add_to_pend(&(curcon->recv_pend_list), &tmp_recv_list);
+		else
+			add_to_pend(&(curcon->recv_pend_list), &recv_list);
 		return;
 	}
 	if (rand() % 100 > 95)
@@ -349,7 +358,7 @@ static void do_recv(int fd)
 	switch (ret)
 	{
 		case RECV_SEND:
-			do_send(fd);
+			do_send(fd, 0);
 			break;
 		case RECV_ADD_EPOLLIN:
 			modify_fd_event(fd, EPOLLIN);
@@ -371,16 +380,28 @@ static void scan_pend_list()
 {
 	struct conn *peer = NULL;
 	list_head_t *l;
+	list_for_each_entry_safe_l(peer, l, &tmp_send_list, send_pend_list)
+	{
+		list_del_init(&(peer->send_pend_list));
+		list_add_tail(&(peer->send_pend_list), &send_list);
+	}
+
 	list_for_each_entry_safe_l(peer, l, &send_list, send_pend_list)
 	{
 		list_del_init(&(peer->send_pend_list));
-		do_send(peer->fd);
+		do_send(peer->fd, 1);
+	}
+
+	list_for_each_entry_safe_l(peer, l, &tmp_recv_list, recv_pend_list)
+	{
+		list_del_init(&(peer->recv_pend_list));
+		list_add_tail(&(peer->recv_pend_list), &recv_list);
 	}
 
 	list_for_each_entry_safe_l(peer, l, &recv_list, recv_pend_list)
 	{
 		list_del_init(&(peer->recv_pend_list));
-		do_recv(peer->fd);
+		do_recv(peer->fd, 1);
 	}
 }
 
@@ -395,12 +416,12 @@ static void do_process(int fd, int events)
 	if(events & EPOLLIN) 
 	{
 		LOG(glogfd, LOG_TRACE, "read event %d, %d\n", events, fd);
-		do_recv(fd);
+		do_recv(fd, 0);
 	}
 	if(events & EPOLLOUT) 
 	{
 		LOG(glogfd, LOG_TRACE, "send event %d, %d\n", events, fd);
-		do_send(fd);
+		do_send(fd, 0);
 	}
 }
 
@@ -460,6 +481,9 @@ int vfs_signalling_thread(void *arg)
 	}
 	INIT_LIST_HEAD(&send_list);
 	INIT_LIST_HEAD(&recv_list);
+
+	INIT_LIST_HEAD(&tmp_send_list);
+	INIT_LIST_HEAD(&tmp_recv_list);
 
 	struct threadstat *thst = get_threadstat();
 	int event = EPOLLIN;
