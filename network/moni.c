@@ -55,7 +55,9 @@ static void cal_limit(int *result, uint64_t two, uint64_t one, int int_limit)
 	int cur_speed = 8 * (two - one) / INTVAL_SEC;
 	if (cur_speed <= int_limit)
 	{
-		*result = max_pend_value;
+		*result = *result << 1;
+		if (*result > max_pend_value)
+			*result = max_pend_value;
 		return ;
 	}
 
