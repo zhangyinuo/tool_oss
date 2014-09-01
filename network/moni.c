@@ -59,6 +59,7 @@ static void cal_limit(int *result, uint64_t two, uint64_t one, int int_limit)
 	if (two - one < min_pass_size)
 	{
 		*result = *result << 1;
+		LOG(glogfd, LOG_DEBUG, "%s %d\n", ID, LN);
 		if (*result > max_pend_value)
 			*result = max_pend_value;
 		if (*result < 5)
@@ -69,6 +70,7 @@ static void cal_limit(int *result, uint64_t two, uint64_t one, int int_limit)
 	int cur_pass_ratio = max_pend_value * cur_speed / int_limit;
 	if (cur_pass_ratio <= pass_down_value)
 	{
+		LOG(glogfd, LOG_DEBUG, "%s %d\n", ID, LN);
 		*result += pass_step;
 		if (*result > max_pend_value)
 			*result = max_pend_value;
@@ -78,6 +80,7 @@ static void cal_limit(int *result, uint64_t two, uint64_t one, int int_limit)
 	if (cur_pass_ratio <= pass_up_value)
 		return ;
 
+	LOG(glogfd, LOG_DEBUG, "%s %d\n", ID, LN);
 	*result = (*result) >> 1;
 }
 
