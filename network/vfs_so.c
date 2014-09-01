@@ -477,10 +477,10 @@ int vfs_signalling_thread(void *arg)
 				do_process(pev[i].data.fd, pev[i].events);
 		}
 		thread_reached(thst);
-		scan_pend_list();
 		now = time(NULL);
 		if (now > last + g_config.cktimeout)
 		{
+			scan_pend_list();
 			last = now;
 			if (solib.svc_timeout)
 				solib.svc_timeout();
