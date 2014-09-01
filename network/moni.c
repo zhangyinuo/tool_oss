@@ -90,7 +90,7 @@ static void cal_limit(int *result, uint64_t two, uint64_t one, int int_limit)
 	else
 	{
 		LOG(glogfd, LOG_DEBUG, "%s %d\n", ID, LN);
-		*result = *result >> 1;
+		*result -= pass_step * 2;
 	}
 	if (*result < 5)
 		*result = 5;
