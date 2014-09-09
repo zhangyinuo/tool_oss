@@ -45,7 +45,7 @@ static int active_connect()
 
 static void create_header(char *httpheader, t_task_base *base, t_task_sub *sub)
 {
-	strcat(httpheader, "GET /us_oss HTTP/1.1\r\n");
+	strcat(httpheader, "POST /us_oss HTTP/1.1\r\n");
 
 	strcat(httpheader, "filename: ");
 	strcat(httpheader, base->filename);

@@ -92,38 +92,8 @@ static void update_sync_time(char *filename)
 	fclose(fp);
 }
 
-static int do_req(int cfd, t_uc_oss_http_header *header)
+static int do_req(char *fname)
 {
-	char httpheader[256] = {0};
-	if (header->type >= 5)
-	{
-		LOG(vfs_http_log, LOG_NORMAL, "peer rsp %s %d\n", header->filename, header->type);
-		sprintf(httpheader, "HTTP/1.1 200 OK\r\nContent-Type: video/x-flv\r\nContent-Length: 0\r\n\r\n");
-		set_client_data(cfd, httpheader, strlen(httpheader));
-		if (header->type == 5)
-			update_sync_time(header->filename);
-		return 0;
-	}
-
-	if ( header->datalen == 0)
-		return 0;
-
-	int splic_count = header->datalen / g_config.splic_min_size;
-
-	int idx = 1;
-	off_t start = 0;
-	off_t end = 0;
-	for(; idx <= splic_count; idx++)
-	{
-		if (idx == splic_count)
-			end = header->datalen - 1;
-		else
-			end = start + g_config.splic_min_size - 1;
-
-		if (insert_sub_task(header, idx, splic_count, start, end))
-			return -1;
-		start += g_config.splic_min_size;
-	}
 	return 0;
 }
 
@@ -255,7 +225,7 @@ static int check_request(int fd, char* data, int len)
 				if(len < 1023) {
 					if (parse_header(&(peer->header), data, p - data))
 						return -1;
-					do_req(fd, &(peer->header));
+					do_req(peer->header.filename);
 					return p - data + 4;
 				}
 			}

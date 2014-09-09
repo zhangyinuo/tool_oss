@@ -13,58 +13,21 @@
 volatile extern int maintain ;		//1-维护配置 0 -可以使用
 extern t_vfs_up_proxy g_proxy;
 
-static inline int isDigit(const char *ptr) 
+static void create_header(char *httpheader, char *data)
 {
-	return isdigit(*(unsigned char *)ptr);
-}
-
-static int active_connect(char *ip, int port)
-{
-	int fd = createsocket(ip, port);
-	if (fd < 0)
-	{
-		LOG(vfs_sig_log, LOG_ERROR, "connect %s:%d err %m\n", ip, port);
-		return -1;
-	}
-	if (svc_initconn(fd))
-	{
-		LOG(vfs_sig_log, LOG_ERROR, "svc_initconn err %m\n");
-		close(fd);
-		return -1;
-	}
-	add_fd_2_efd(fd);
-	LOG(vfs_sig_log, LOG_NORMAL, "fd [%d] connect %s:%d\n", fd, ip, port);
-	return fd;
-}
-
-static void create_header(char *httpheader, t_task_base *base, t_task_sub *sub, off_t start)
-{
-	strcat(httpheader, "GET /us_oss HTTP/1.1\r\n");
+	strcat(httpheader, "POST /us_oss HTTP/1.1\r\n");
 
 	strcat(httpheader, "filename: ");
-	strcat(httpheader, base->filename);
+	strcat(httpheader, data);
 	strcat(httpheader, "\r\n");
 
-	strcat(httpheader, "type: 2\r\n");
-	char sbuf[64] = {0x0};
-	snprintf(sbuf, sizeof(sbuf), "datalen: %ld\r\n", sub->end - sub->start + 1);
-	strcat(httpheader, sbuf);
-
-	memset(sbuf, 0, sizeof(sbuf));
-	snprintf(sbuf, sizeof(sbuf), "start: %ld\r\n", start);
-	strcat(httpheader, sbuf);
-
-	memset(sbuf, 0, sizeof(sbuf));
-	snprintf(sbuf, sizeof(sbuf), "end: %ld\r\n", sub->end);
-	strcat(httpheader, sbuf);
-
-	memset(sbuf, 0, sizeof(sbuf));
-	snprintf(sbuf, sizeof(sbuf), "filemd5: %s\r\n\r\n", base->filemd5);
-	strcat(httpheader, sbuf);
+	strcat(httpheader, "type: 251\r\n\r\n");
 }
 
-static int get_task_unok(char *buf, int buflen, uint32_t srcip)
+static int get_task_unok(char *httpheader, uint32_t srcip)
 {
+	char buf[10240] = {0x0};
+	int buflen = sizeof(buf);
 	int retlen = 0;
 	t_vfs_tasklist *task = NULL;
 	int ret = 0;
@@ -96,7 +59,7 @@ static int get_task_unok(char *buf, int buflen, uint32_t srcip)
 		}
 		t_task_sub *sub = &(task->task.sub);
 		char subbuf[1024] = {0x0};
-		int sublen = snprintf(subbuf, sizeof(subbuf), "%s %ld %ld %d %d\n", base->filename, sub->start, sub->end, sub->idx, sub->count);
+		int sublen = snprintf(subbuf, sizeof(subbuf), "%s %ld %ld %d %d:", base->filename, sub->start, sub->end, sub->idx, sub->count);
 		if (sublen + retlen >= buflen)
 		{
 			vfs_set_task(task, TASK_WAIT_TMP);
@@ -106,7 +69,8 @@ static int get_task_unok(char *buf, int buflen, uint32_t srcip)
 		vfs_set_task(task, TASK_HOME);
 	}
 
-	return retlen;
+	create_header(httpheader, buf);
+	return strlen(httpheader);
 }
 
 

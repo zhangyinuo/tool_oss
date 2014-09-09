@@ -234,8 +234,8 @@ static int check_req(int fd)
 
 	if (header->type == 250)
 	{
-		char taskbuf[1024] = {0x0};
-		int tasklen = get_task_unok(taskbuf, sizeof(taskbuf), peer->ip);
+		char taskbuf[10240] = {0x0};
+		int tasklen = get_task_unok(taskbuf, peer->ip);
 		set_client_data(fd, taskbuf, tasklen);
 		LOG(vfs_sig_log, LOG_NORMAL, "%s:%d fd[%d] get_task_unok !\n", FUNC, LN, fd);
 		return RECV_SEND;
@@ -365,7 +365,7 @@ int svc_send(int fd)
 	vfs_cs_peer *peer = (vfs_cs_peer *) curcon->user;
 	peer->hbtime = time(NULL);
 	list_move_tail(&(peer->alist), &activelist);
-	return SEND_ADD_EPOLLIN;
+	return SEND_CLOSE;
 }
 
 void svc_timeout()
@@ -385,7 +385,6 @@ void svc_timeout()
 			do_close(peer->fd);
 		}
 	}
-	check_task();
 }
 
 void svc_finiconn(int fd)

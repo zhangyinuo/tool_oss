@@ -77,37 +77,21 @@ static void create_header(char *httpheader, t_task_base *base)
 	strcat(httpheader, sbuf);
 }
 
-static int inotify_new_task(t_task_base *base)
+static void check_task()
 {
-	char httpheader[1024] = {0x0};
+	t_task_base base;
+	memset(&base, 0, sizeof(base));
 
-	create_header(httpheader, base);
+	base.type = 250;
 
 	int fd = active_connect();
 	if (fd < 0)
-	{
-		LOG(vfs_http_log, LOG_ERROR, "connect err %m\n");
-		return -1;
-	}
+		return;
 
-	return active_send(fd, httpheader);
-}
+	char httpheader[1024] = {0x0};
+	create_header(httpheader, &base);
 
-static void check_task()
-{
-	return ;
-	t_vfs_tasklist *task = NULL;
-	int ret = 0;
-	uint16_t once_run = 0;
-	while (1)
-	{
-		once_run++;
-		if (once_run >= g_config.cs_max_task_run_once)
-			return;
-		ret = vfs_get_task(&task, TASK_WAIT);
-		if (ret != GET_TASK_OK)
-			return ;
-	}
+	active_send(fd, httpheader);
 }
 
 
