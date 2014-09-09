@@ -39,6 +39,7 @@ typedef struct {
 	char hostname[256];
 	char filemd5[36];
 	char srcip[16];
+	uint32_t usrcip;
 	int  srcport;
 	off_t fsize;
 	off_t getlen;

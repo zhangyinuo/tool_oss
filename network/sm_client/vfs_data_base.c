@@ -63,8 +63,9 @@ static void create_header(char *httpheader, t_task_base *base, t_task_sub *sub, 
 	strcat(httpheader, sbuf);
 }
 
-void check_task()
+static int get_task_unok(char *buf, int buflen, uint32_t srcip)
 {
+	int retlen = 0;
 	t_vfs_tasklist *task = NULL;
 	int ret = 0;
 	while (1)
@@ -83,38 +84,29 @@ void check_task()
 	{
 		once_run++;
 		if (once_run >= g_config.cs_max_task_run_once)
-			return;
+			break;
 		ret = vfs_get_task(&task, TASK_WAIT);
 		if (ret != GET_TASK_OK)
-		{
-			LOG(vfs_sig_log, LOG_TRACE, "vfs_get_task get notihng %d\n", ret);
-			ret = vfs_get_task(&task, TASK_Q_SYNC_DIR);
-			if (ret != GET_TASK_OK)
-				return ;
-			else
-				LOG(vfs_sig_log, LOG_DEBUG, "Process TASK_Q_SYNC_DIR!\n");
-		}
+			break;
 		t_task_base *base = &(task->task.base);
-		int fd = active_connect(base->srcip, g_config.sig_port);
-		if (fd < 0)
+		if (base->usrcip != srcip)
 		{
-			LOG(vfs_sig_log, LOG_ERROR, "connect %s %d error %m\n", base->srcip, base->srcport);
-			base->overstatus = OVER_TOO_MANY_TRY;
-			vfs_set_task(task, TASK_FIN);  
+			vfs_set_task(task, TASK_WAIT_TMP);
 			continue;
 		}
-		t_task_sub *sub = (t_task_sub *)&(task->task.sub);
-		check_last_file(base, sub);
-		off_t start = base->getlen + sub->start;
-		//off_t start = sub->start;
-		char httpheader[1024] = {0x0};
-		create_header(httpheader, base, sub, start);
-		active_send(fd, httpheader);
-		struct conn *curcon = &acon[fd];
-		vfs_cs_peer *peer = (vfs_cs_peer *) curcon->user;
-		peer->recvtask = task;
-		peer->sock_stat = RECV_HEAD_ING;
+		t_task_sub *sub = &(task->task.sub);
+		char subbuf[1024] = {0x0};
+		int sublen = snprintf(subbuf, sizeof(subbuf), "%s %ld %ld %d %d\n", base->filename, sub->start, sub->end, sub->idx, sub->count);
+		if (sublen + retlen >= buflen)
+		{
+			vfs_set_task(task, TASK_WAIT_TMP);
+			break;
+		}
+		retlen += snprintf(buf + retlen, buflen - retlen, "%s", subbuf);
+		vfs_set_task(task, TASK_HOME);
 	}
+
+	return retlen;
 }
 
 

@@ -231,37 +231,15 @@ static int check_req(int fd)
 		LOG(vfs_sig_log, LOG_ERROR, "%s:%d fd[%d] ERROR parse_header error!\n", FUNC, LN, fd);
 		return RECV_CLOSE;
 	}
-	/*
-	char *pret = strstr(data, "HTTP/");
-	if (pret == NULL)
-	{
-		LOG(vfs_sig_log, LOG_ERROR, "%s:%d fd[%d] ERROR no HTTP/!\n", FUNC, LN, fd);
-		return RECV_CLOSE;
-	}
 
-	pret = strchr(pret, ' ');
-	if (pret == NULL)
+	if (header->type == 250)
 	{
-		LOG(vfs_sig_log, LOG_ERROR, "%s:%d fd[%d] ERROR no http blank!\n", FUNC, LN, fd);
-		return RECV_CLOSE;
+		char taskbuf[1024] = {0x0};
+		int tasklen = get_task_unok(taskbuf, sizeof(taskbuf), peer->ip);
+		set_client_data(fd, taskbuf, tasklen);
+		LOG(vfs_sig_log, LOG_NORMAL, "%s:%d fd[%d] get_task_unok !\n", FUNC, LN, fd);
+		return RECV_SEND;
 	}
-
-	int retcode = atoi(pret + 1);
-	if (retcode != 200 && retcode != 206)
-	{
-		LOG(vfs_sig_log, LOG_ERROR, "%s:%d fd[%d] ERROR retcode = %d!\n", FUNC, LN, fd, retcode);
-		return RECV_CLOSE;
-	}
-
-	char *pleng = strstr(data, "Content-Length: ");
-	if (pleng == NULL)
-	{
-		LOG(vfs_sig_log, LOG_ERROR, "%s:%d fd[%d] ERROR Content-Length: !\n", FUNC, LN, fd);
-		return RECV_CLOSE;
-	}
-
-	off_t fsize = atol(pleng + strlen("Content-Length: "));
-	*/
 
 	t_vfs_tasklist *task = NULL;
 	int ret = vfs_get_task(&task, TASK_HOME);
@@ -276,6 +254,7 @@ static int check_req(int fd)
 	memset(base, 0, sizeof(t_task_base));
 	memset(sub, 0, sizeof(t_task_sub));
 
+	base->usrcip = peer->ip;
 	convert_httpheader_2_task(header, base, sub);
 	peer->recvtask = task;
 
@@ -359,6 +338,8 @@ recvfileing:
 		subret = check_req(fd);
 		if (subret == -1)
 			break;
+		if (subret == RECV_SEND)
+			return subret;
 		if (subret == RECV_CLOSE)
 		{
 			peer->recvtask = NULL;
