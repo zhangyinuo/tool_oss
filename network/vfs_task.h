@@ -48,6 +48,7 @@ typedef struct {
 	short overstatus;
 	uint8_t type;
 	uint8_t retry;     /*任务执行失败时，根据配置是否执行重新发起任务，已经重试次数，不能超过设定重试次数*/
+	uint8_t expire;
 }t_task_base;
 
 typedef struct {
@@ -106,7 +107,9 @@ int init_task_info();
 
 int add_task_to_alltask(t_vfs_tasklist *task);
 
-int check_task_from_alltask(char *fname, int idx, int count);
+int check_task_from_alltask(char *fname, int idx, int count, uint8_t expire);
+
+int set_task_from_alltask(char *fname, int idx, int count, uint8_t expire);
 
 int get_task_from_alltask(t_vfs_tasklist **task, char *filename, int idx, int count);
 

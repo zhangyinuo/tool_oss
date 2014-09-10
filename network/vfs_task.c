@@ -202,7 +202,7 @@ int add_task_to_alltask(t_vfs_tasklist *task)
 	return 0;
 }
 
-int check_task_from_alltask(char *fname, int idx, int count)
+int check_task_from_alltask(char *fname, int idx, int count, uint8_t expire)
 {
 	int index = get_vfs_task_hash(fname, idx, count)&TASK_MOD;
 	t_vfs_tasklist *task0 = NULL;
@@ -232,6 +232,47 @@ int check_task_from_alltask(char *fname, int idx, int count)
 			continue;
 		if (count != task0->task.sub.count)
 			continue;
+		if (task0->task.base.expire != expire)
+			continue;
+		ret = 0;
+		break;
+	}
+	if (pthread_mutex_unlock(&TASK_ALL))
+		LOG(glogfd, LOG_ERROR, "ERR %s:%d pthread_mutex_unlock error %m\n", FUNC, LN);
+	return ret;
+}
+
+int set_task_from_alltask(char *fname, int idx, int count, uint8_t expire)
+{
+	int index = get_vfs_task_hash(fname, idx, count)&TASK_MOD;
+	t_vfs_tasklist *task0 = NULL;
+	list_head_t *l;
+
+	int ret = -1;
+	struct timespec to;
+	to.tv_sec = g_config.lock_timeout + time(NULL);
+	to.tv_nsec = 0;
+	ret = pthread_mutex_timedlock(&TASK_ALL, &to);
+	if (ret != 0)
+	{
+		if (ret != EDEADLK)
+		{
+			LOG(glogfd, LOG_ERROR, "ERR %s:%d pthread_mutex_timedlock error %d\n", FUNC, LN, ret);
+			report_err_2_nm(ID, FUNC, LN, ret);
+			return -1;
+		}
+	}
+
+	ret = -1;
+	list_for_each_entry_safe_l(task0, l, &alltask[index], hlist)
+	{
+		if (strcmp(fname, task0->task.base.filename))
+			continue;
+		if (idx != task0->task.sub.idx)
+			continue;
+		if (count != task0->task.sub.count)
+			continue;
+		task0->task.base.expire = expire;
 		ret = 0;
 		break;
 	}

@@ -70,6 +70,12 @@ static int do_merge_file(char *hostname, char *srcip, char *filename, int count,
 			LOG(vfs_http_log, LOG_ERROR, "get %s %d %d err %m\n", filename, idx, count);
 			break;
 		}
+		if (task->task.base.expire)
+		{
+			LOG(vfs_http_log, LOG_ERROR, "get %s %d %d expire\n", filename, idx, count);
+			vfs_set_task(task, TASK_HOME);
+			continue;
+		}
 
 		int ifd = open(task->task.base.tmpfile, O_RDONLY);
 		if (ifd < 0)
@@ -136,7 +142,7 @@ static int check_task_allsub_isok(char *filename, int count)
 	int idx = 1;
 	for (; idx <= count; idx++)
 	{
-		if (check_task_from_alltask(filename, idx, count))
+		if (check_task_from_alltask(filename, idx, count, 0))
 		{
 			LOG(vfs_http_log, LOG_NORMAL, "%s %d %d not ok \n", filename, idx, count);
 			return -1;
@@ -191,6 +197,7 @@ static void check_lack_task(t_vfs_tasklist *task)
 			sub->idx = i;
 			sub->count = count;
 
+			set_task_from_alltask(task->task.base.filename, i, count, 1);
 			vfs_set_task(task0, TASK_WAIT);
 		}
 		memset(subfile, 0, sizeof(subfile));
