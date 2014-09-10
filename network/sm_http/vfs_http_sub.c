@@ -171,7 +171,7 @@ static void check_lack_task(t_vfs_tasklist *task)
 	get_localdir(task->task.base.hostname, task->task.base.filename, localfile);
 
 	char checkfile[256] = {0x0};
-	snprintf(checkfile, sizeof(checkfile), ".%s_checkfile", localfile);
+	snprintf(checkfile, sizeof(checkfile), "%s_checkfile_nodup", localfile);
 	struct stat tstat;
 	if (stat(checkfile, &tstat) == 0)
 		return;
