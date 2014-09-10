@@ -176,6 +176,10 @@ static void check_lack_task(t_vfs_tasklist *task)
 	if (stat(checkfile, &tstat) == 0)
 		return;
 
+	char cmdstr[256] = {0x0};
+	snprintf(cmdstr, sizeof(cmdstr), "touch %s", checkfile);
+	system(cmdstr);
+
 	char subfile[256] = {0x0};
 	int i = 1;
 	int count = task->task.sub.count;
