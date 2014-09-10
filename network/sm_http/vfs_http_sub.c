@@ -161,6 +161,40 @@ static void clear_alltask_timeout(char *filename, int count)
 
 static void check_lack_task(t_vfs_tasklist *task)
 {
+	char localfile[256] = {0x0};
+	get_localdir(task->task.base.hostname, task->task.base.filename, localfile);
+
+	char subfile[256] = {0x0};
+	int i = 1;
+	int count = task->task.sub.count;
+	for ( ; i <= count; i++)
+	{
+		snprintf(subfile, sizeof(subfile), "%s_%d_%d", localfile, i, count);
+		struct stat tstat;
+		if (stat(subfile, &tstat))
+		{
+			LOG(vfs_http_log, LOG_NORMAL, "%u:%s lack\n", task->task.base.usrcip, subfile);
+
+			t_vfs_tasklist *task0 = NULL;
+			int ret = vfs_get_task(&task0, TASK_HOME);
+			if (ret != GET_TASK_OK)
+			{
+				LOG(vfs_http_log, LOG_ERROR, "vfs_get_task err %m %s\n", task->task.base.filename);
+				continue;
+			}
+			t_task_base *base = (t_task_base *) &(task0->task.base);
+			t_task_sub *sub = (t_task_sub *) &(task0->task.sub);
+			memset(base, 0, sizeof(t_task_base));
+			memset(sub, 0, sizeof(t_task_sub));
+
+			memcpy(base, &(task->task.base), sizeof(t_task_base));
+			sub->idx = i;
+			sub->idx = count;
+
+			vfs_set_task(task0, TASK_WAIT);
+		}
+		memset(subfile, 0, sizeof(subfile));
+	}
 }
 
 static void check_fin_task()

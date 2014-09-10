@@ -14,6 +14,7 @@
 #include "common.h"
 #include "global.h"
 #include "vfs_so.h"
+#include "vfs_localfile.h"
 #include "myepoll.h"
 #include "protocol.h"
 #include "util.h"
@@ -36,13 +37,13 @@ typedef struct {
 int vfs_http_log = -1;
 static list_head_t activelist;  //ÓÃÀ´¼ì²â³¬Ê±
 
-static int insert_sub_task(t_uc_oss_http_header *header, int idx, int count, off_t start, off_t end)
+static int insert_sub_task(t_task_base *base0, int idx, int count, off_t start, off_t end)
 {
 	t_vfs_tasklist *task = NULL;
 	int ret = vfs_get_task(&task, TASK_HOME);
 	if (ret != GET_TASK_OK)
 	{
-		LOG(vfs_http_log, LOG_ERROR, "vfs_get_task err %m %s:%s\n", header->srcip, header->filename);
+		LOG(vfs_http_log, LOG_ERROR, "vfs_get_task err %m %s\n", base0->filename);
 		return -1;
 	}
 
@@ -57,43 +58,56 @@ static int insert_sub_task(t_uc_oss_http_header *header, int idx, int count, off
 	sub->start = start;
 	sub->end = end;
 	sub->starttime = time(NULL);
+	memcpy(base, base0, sizeof(t_task_base));
 	base->stime = sub->starttime;
 
-	base->fsize = header->datalen;
-	snprintf(base->filename, sizeof(base->filename), "%s", header->filename);
-	snprintf(base->filemd5, sizeof(base->filemd5), "%s", header->filemd5);
-	snprintf(base->srcip, sizeof(base->srcip), "%s", header->srcip);
 	LOG(vfs_http_log, LOG_NORMAL, "%s %s:%s:%s %ld:%ld:%d:%d\n", __FUNCTION__, base->srcip, base->filename, base->filemd5, sub->start, sub->end, sub->idx, sub->count);
-	vfs_set_task(task, TASK_WAIT);
+	vfs_set_task(task, TASK_WAIT_SYNC);
 	return 0;
 }
 
-static void update_sync_time(char *filename)
+static void process_lack(char *filename, int idx, int count)
 {
-	struct stat filestat;
-	if (stat(filename, &filestat))
+	t_task_base base;
+	memset(&base, 0, sizeof(t_task_base));
+	snprintf(base.filename, sizeof(base.filename), "%s", filename);
+	if (get_localfile_stat(&base))
 	{
-		LOG(vfs_http_log, LOG_ERROR, "stat %s error %m\n", filename);
-		return ;
+		LOG(vfs_http_log, LOG_ERROR, "get_localfile_stat err %m %s\n", base.filename);
+		return;
 	}
 
-	char sync_time_file[256] = {0x0};
-	snprintf(sync_time_file, sizeof(sync_time_file), "%s/.sync_time", dirname(filename));
+	off_t start = g_config.splic_min_size * (idx - 1);
+	off_t end = start + g_config.splic_min_size - 1;
+	if (end >  base.fsize - 1)
+		end = base.fsize - 1;
 
-	FILE *fp = fopen(sync_time_file, "w");
-	if (!fp)
+	if (start < 0 || start > base.fsize - 1)
 	{
-		LOG(vfs_http_log, LOG_ERROR, "open %s error %m\n", sync_time_file);
-		return ;
+		LOG(vfs_http_log, LOG_ERROR, "err start %s:%d:%d\n", base.filename, idx, count);
+		return;
 	}
-
-	fprintf(fp, "%ld", filestat.st_ctime); 
-
-	fclose(fp);
+	insert_sub_task(&base, idx, count, start, end);
 }
 
 static int do_req(char *fname)
 {
+	char *s = fname;
+	while (1)
+	{
+		char *t = strchr(s, ':');
+		if (t == NULL)
+			break;
+		*t = 0x0;
+		char rect[4][256];
+		memset(rect, 0, sizeof(rect));
+		int n = sscanf(s, "%[^ ] %[^ ] %[^ ]", rect[0], rect[1], rect[2]);
+		if (n == 3)
+			process_lack(rect[0], atoi(rect[1]), atoi(rect[2]));
+		else
+			LOG(vfs_http_log, LOG_ERROR, "err %s %d\n", s, n);
+		s = t + 1;
+	}
 	return 0;
 }
 
@@ -179,31 +193,6 @@ static int parse_header(t_uc_oss_http_header *peer, char *data, int maxlen)
 	if (pret == NULL)
 		return -1;
 	peer->type = atoi(pret);
-	data = end;
-
-	pret = parse_item(data, "datalen: ", &end);
-	if (pret == NULL)
-		return -1;
-	peer->datalen = atol(pret);
-	data = end;
-
-	pret = parse_item(data, "start: ", &end);
-	if (pret == NULL)
-		return -1;
-	peer->start = atol(pret);
-	data = end;
-
-	pret = parse_item(data, "end: ", &end);
-	if (pret == NULL)
-		return -1;
-	peer->end = atol(pret);
-	data = end;
-
-	pret = parse_item(data, "filemd5: ", &end);
-	if (pret == NULL)
-		return -1;
-	snprintf(peer->filemd5, sizeof(peer->filemd5), "%s", pret);
-
 	return 0;
 }
 

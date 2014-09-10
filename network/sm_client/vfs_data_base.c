@@ -59,7 +59,7 @@ static int get_task_unok(char *httpheader, uint32_t srcip)
 		}
 		t_task_sub *sub = &(task->task.sub);
 		char subbuf[1024] = {0x0};
-		int sublen = snprintf(subbuf, sizeof(subbuf), "%s %ld %ld %d %d:", base->filename, sub->start, sub->end, sub->idx, sub->count);
+		int sublen = snprintf(subbuf, sizeof(subbuf), "%s %d %d:", base->filename, sub->idx, sub->count);
 		if (sublen + retlen >= buflen)
 		{
 			vfs_set_task(task, TASK_WAIT_TMP);
