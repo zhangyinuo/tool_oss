@@ -170,13 +170,18 @@ static void check_lack_task(t_vfs_tasklist *task)
 	char localfile[256] = {0x0};
 	get_localdir(task->task.base.hostname, task->task.base.filename, localfile);
 
+	char checkfile[256] = {0x0};
+	snprintf(checkfile, sizeof(checkfile), ".%s_checkfile", localfile);
+	struct stat tstat;
+	if (stat(checkfile, &tstat) == 0)
+		return;
+
 	char subfile[256] = {0x0};
 	int i = 1;
 	int count = task->task.sub.count;
 	for ( ; i <= count; i++)
 	{
 		snprintf(subfile, sizeof(subfile), "%s_%d_%d", localfile, i, count);
-		struct stat tstat;
 		if (stat(subfile, &tstat))
 		{
 			LOG(vfs_http_log, LOG_NORMAL, "%u:%s lack\n", task->task.base.usrcip, subfile);

@@ -116,7 +116,6 @@ int main(int argc, char **argv) {
 	}
 	daemon_start(argc, argv);
 	umask(0);
-	ICALL(start_watchdog);
 	ICALL(init_log);
 	ICALL(init_glog);
 	ICALL(init_fdinfo);
