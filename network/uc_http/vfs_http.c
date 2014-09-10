@@ -76,6 +76,12 @@ static void process_lack(char *filename, int idx, int count)
 		LOG(vfs_http_log, LOG_ERROR, "get_localfile_stat err %m %s\n", base.filename);
 		return;
 	}
+	LOG(vfs_http_log, LOG_NORMAL, "process %s:%d:%d\n", base.filename, idx, count);
+	if (idx < 1 || count < 1 || idx > count)
+	{
+		LOG(vfs_http_log, LOG_ERROR, "idx err %s:%d:%d\n", base.filename, idx, count);
+		return;
+	}
 
 	off_t start = g_config.splic_min_size * (idx - 1);
 	off_t end = start + g_config.splic_min_size - 1;
@@ -92,6 +98,7 @@ static void process_lack(char *filename, int idx, int count)
 
 static int do_req(char *fname)
 {
+	LOG(vfs_http_log, LOG_NORMAL, "do_req process %s\n", fname);
 	char *s = fname;
 	while (1)
 	{
@@ -276,6 +283,10 @@ void svc_timeout()
 		if (now - peer->hbtime > g_config.timeout)
 			do_close(peer->fd);
 	}
+	static time_t last_check = 0;
+	if (now - last_check > 30)
+		return;
+	last_check = now;
 	check_task();
 }
 

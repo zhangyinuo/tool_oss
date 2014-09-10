@@ -189,7 +189,7 @@ static void check_lack_task(t_vfs_tasklist *task)
 
 			memcpy(base, &(task->task.base), sizeof(t_task_base));
 			sub->idx = i;
-			sub->idx = count;
+			sub->count = count;
 
 			vfs_set_task(task0, TASK_WAIT);
 		}
