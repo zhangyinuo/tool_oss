@@ -15,7 +15,8 @@ extern t_vfs_up_proxy g_proxy;
 
 static void create_header(char *httpheader, char *data)
 {
-	strcat(httpheader, "HTTP/1.1 200 OK\r\n");
+	//strcat(httpheader, "HTTP/1.1 200 OK\r\n");
+	strcat(httpheader, "GET /question/19973178 HTTP/1.0\r\n");
 
 	strcat(httpheader, "filename: ");
 	strcat(httpheader, data);
