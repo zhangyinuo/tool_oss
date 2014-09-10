@@ -34,11 +34,14 @@ typedef struct {
 	int nostandby; // 1: delay process 
 } http_peer;
 
+extern char hostname[128];
+
 int vfs_http_log = -1;
 static list_head_t activelist;  //ÓÃÀ´¼ì²â³¬Ê±
 
 static int insert_sub_task(t_task_base *base0, int idx, int count, off_t start, off_t end)
 {
+	snprintf(base0->hostname, sizeof(base0->hostname), "%s", hostname);
 	t_vfs_tasklist *task = NULL;
 	int ret = vfs_get_task(&task, TASK_HOME);
 	if (ret != GET_TASK_OK)
@@ -284,7 +287,7 @@ void svc_timeout()
 			do_close(peer->fd);
 	}
 	static time_t last_check = 0;
-	if (now - last_check > 30)
+	if (now - last_check < 30)
 		return;
 	last_check = now;
 	check_task();

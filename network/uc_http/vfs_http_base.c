@@ -68,8 +68,11 @@ static void create_header(char *httpheader, t_task_base *base)
 	snprintf(sbuf, sizeof(sbuf), "filemd5: %s\r\n", base->filemd5);
 	strcat(httpheader, sbuf);
 
+	strcat(httpheader, "idx: 1\r\n");
+	strcat(httpheader, "count: 10\r\n");
+
 	memset(sbuf, 0, sizeof(sbuf));
-	snprintf(sbuf, sizeof(sbuf), "filectime: %ld\r\n", base->file_ctime);
+	snprintf(sbuf, sizeof(sbuf), "hostname: %s\r\n", hostname);
 	strcat(httpheader, sbuf);
 
 	memset(sbuf, 0, sizeof(sbuf));

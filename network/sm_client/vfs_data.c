@@ -238,7 +238,7 @@ static int check_req(int fd)
 	if (header->type == 250)
 	{
 		char taskbuf[10240] = {0x0};
-		int tasklen = get_task_unok(taskbuf, peer->ip);
+		int tasklen = get_task_unok(taskbuf, header->hostname);
 		set_client_data(fd, taskbuf, tasklen);
 		LOG(vfs_sig_log, LOG_NORMAL, "%s:%d fd[%d] get_task_unok !\n", FUNC, LN, fd);
 		return RECV_SEND;

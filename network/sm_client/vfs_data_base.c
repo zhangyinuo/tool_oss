@@ -25,7 +25,7 @@ static void create_header(char *httpheader, char *data)
 	strcat(httpheader, "type: 251\r\n\r\n");
 }
 
-static int get_task_unok(char *httpheader, uint32_t srcip)
+static int get_task_unok(char *httpheader, char *hostname)
 {
 	char buf[10240] = {0x0};
 	int buflen = sizeof(buf);
@@ -53,7 +53,7 @@ static int get_task_unok(char *httpheader, uint32_t srcip)
 		if (ret != GET_TASK_OK)
 			break;
 		t_task_base *base = &(task->task.base);
-		if (base->usrcip != srcip)
+		if (strcmp(base->hostname, hostname))
 		{
 			vfs_set_task(task, TASK_WAIT_TMP);
 			continue;
