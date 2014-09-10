@@ -228,8 +228,11 @@ static int check_req(int fd)
 	t_uc_oss_http_header *header = (t_uc_oss_http_header *) &(peer->header);
 	if (parse_header(header, data))
 	{
-		LOG(vfs_sig_log, LOG_ERROR, "%s:%d fd[%d] ERROR parse_header error!\n", FUNC, LN, fd);
-		return RECV_CLOSE;
+		if (header->type != 250)
+		{
+			LOG(vfs_sig_log, LOG_ERROR, "%s:%d fd[%d] ERROR parse_header error!\n", FUNC, LN, fd);
+			return RECV_CLOSE;
+		}
 	}
 
 	if (header->type == 250)
