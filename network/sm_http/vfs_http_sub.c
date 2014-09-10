@@ -159,6 +159,10 @@ static void clear_alltask_timeout(char *filename, int count)
 	}
 }
 
+static void check_lack_task(t_vfs_tasklist *task)
+{
+}
+
 static void check_fin_task()
 {
 	int once = 0;
@@ -184,6 +188,7 @@ static void check_fin_task()
 		}
 		else 
 		{
+			check_lack_task(task);
 			add_task_to_alltask(task);
 			if (check_task_allsub_isok(task->task.base.filename, task->task.sub.count) == 0)
 				do_merge_file(task->task.base.hostname, task->task.base.srcip, task->task.base.filename, task->task.sub.count, task->task.base.filemd5);
